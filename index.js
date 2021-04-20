@@ -85,10 +85,19 @@ for(let i=0; i < dots.length; i++){
 	dots[i]['y'] = 0.5
 }
 
+
+var legend = {
+	'0': 'Bruce Poliquin',
+	'1': 'Jared F. Golden',
+	'2': 'Tiffany L. Bond',
+	'3': 'William R.S. Hoar',
+	'X': 'No vote'
+}
+
 var circle;
 
 var width = 800;
-var height = 800;
+var height = 500;
 
 var svg = d3.select("#viz")
 	.attr("width", width)
@@ -97,12 +106,14 @@ var svg = d3.select("#viz")
 var scaleX = d3.scaleLinear().domain([0, 1]).range([0, width])
 var scaleY = d3.scaleLinear().domain([0, 1]).range([0, height])
 
+var currentForces = []
+
 
 function ticked() {
-	//console.log("yoyo")
-	//console.log(circle)
 
 	circle
+		.transition()
+		.duration(50)
 		.attr("cx", d => d.x)
 		.attr("cy", d => d.y)
 
@@ -114,19 +125,13 @@ function ticked() {
 }
 
 
-var force = d3.forceSimulation(dots)
-	.force("collide", d3.forceCollide(5))
-	  .force('forceX', d3.forceX(0.5))
-	  .force('forceY', d3.forceY(0.5))
-	.force('center', d3.forceCenter(width/2, height/2))
-	.stop()
+var force = generateForce(dots, 0.5, 0.2)
+	force.stop()
 
-function renderGraph() {
+function colorizeDots() {
 
 	circle = svg.selectAll("circle")
 	.data(dots)
-	.enter()
-	.append("circle")
 	.style("fill", function(d) { 
 		switch(d.rank1){
 			case '0':
@@ -139,10 +144,22 @@ function renderGraph() {
 				return 'green'
 				break;
 			case '3':
-				return 'yellow'
+				return 'orange'
 				break;
 
 		}
+		return "black"; 
+	})
+
+}
+
+function renderGraph() {
+
+	circle = svg.selectAll("circle")
+	.data(dots)
+	.enter()
+	.append("circle")
+	.style("fill", function(d) { 
 		return "black"; 
 	})
 	.attr("cx", function(d) { return scaleX(d.x)} )
@@ -157,7 +174,31 @@ function renderGraph() {
 }	
 
 
-function runRound2(){
+function clearForces(){
+	for(ind in currentForces){
+		force = currentForces[ind]
+		force.stop()
+	}
+	curentForces = []
+
+}
+
+function generateForce(data, xcenter, ycenter){
+
+	force = d3.forceSimulation(data)
+	.force("collide", d3.forceCollide(5).strength(1))
+	  .force('forceX', d3.forceX(0.5))
+	  .force('forceY', d3.forceY(0.5))
+	.force("charge", d3.forceManyBody().strength(1))
+	.force('center', d3.forceCenter(scaleX(xcenter), scaleY(ycenter)))
+	
+	currentForces.push(force)
+
+	return force;
+
+}
+
+function runRound1(){
 
 	for(let i=0; i<dots.length; i++){
 		let dot = dots[i];
@@ -165,19 +206,19 @@ function runRound2(){
 
 		switch(dot.rank1){
 			case '0':
-				dot.newx = 0.2
+				dot.newx = 1/6.0
 				break;
 			case '1':
-				dot.newx = 0.4
+				dot.newx = 2/6.0
 				break;
 			case '2':
-				dot.newx = 0.6
+				dot.newx = 3/6.0
 				break;
 			case '3':
-				dot.newx = 0.8
+				dot.newx = 4/6.0
 				break;
 			case 'X':
-				dot.newx = 1
+				dot.newx = 5/6.0
 				break;
 		}
 
@@ -187,48 +228,120 @@ function runRound2(){
 
 	force.stop(); 
 
-	force = d3.forceSimulation(dots.filter(dot => dot.newx == 0.2))
-	.force("collide", d3.forceCollide(5).strength(1))
-	  .force('forceX', d3.forceX(0.5))
-	  .force('forceY', d3.forceY(0.5))
-	.force('center', d3.forceCenter(scaleX(0.2), 700))
-	.stop()
+	let x_locs = [1,2,3,4,5].map(x => x/6.0)
 
-	force.on("tick", ticked)
-	.restart()
+	for(ind in x_locs){
+		let x_loc = x_locs[ind]
 
-	force = d3.forceSimulation(dots.filter(dot => dot.newx == 0.4))
-	.force("collide", d3.forceCollide(5).strength(1))
-	  .force('forceX', d3.forceX(0.5))
-	  .force('forceY', d3.forceY(0.5))
-	.force('center', d3.forceCenter(scaleX(0.4), 700))
-	.stop()
+		let subset_dots = dots.filter(dot => dot.newx == x_loc)
+		force = generateForce(subset_dots, x_loc, 0.5)
+		force.stop()
+		force.on("tick", ticked)
+		.restart()
 
-	force.on("tick", ticked)
-	.restart()
+		svg.append("text")
+			.attr("class", "cluster-label")
+			.text(legend[subset_dots[0].rank1])
+			.attr("id", legend[subset_dots[0].rank1])
+			.attr("x", scaleX(x_loc))
+			.attr("y", scaleY(0.7))
+			.attr("text-anchor", "middle")
 
-	force = d3.forceSimulation(dots.filter(dot => dot.newx == 0.6))
-	.force("collide", d3.forceCollide(5).strength(1))
-	  .force('forceX', d3.forceX(0.5))
-	  .force('forceY', d3.forceY(0.5))
-	.force('center', d3.forceCenter(scaleX(0.6), 700))
-	.stop()
+		svg.append("text")
+			.attr("class", "cluster-number")
+			.attr("id", "count-" + ind)
+			.text("Count: " + subset_dots.length)
+			.attr("x", scaleX(x_loc))
+			.attr("y", scaleY(0.75))
+			.attr("text-anchor", "middle")
+			
+	}
 
-	force.on("tick", ticked)
-	.restart()
-
-	force = d3.forceSimulation(dots.filter(dot => dot.newx == 0.8))
-	.force("collide", d3.forceCollide(5).strength(1))
-	  .force('forceX', d3.forceX(0.5))
-	  .force('forceY', d3.forceY(0.5))
-	.force('center', d3.forceCenter(scaleX(0.8), 700))
-	.stop()
-
-	force.on("tick", ticked)
-	.restart()
 }
 
+function runRound2(){
 
+	for(let i=0; i<dots.length; i++){
+		let dot = dots[i];
+
+		switch(dot.rank2){
+			case '0':
+				dot.newx = 1/6.0
+				break;
+			case '1':
+				dot.newx = 2/6.0
+				break;
+			case '2':
+				dot.newx = 3/6.0
+				break;
+			case '3':
+				dot.newx = 4/6.0
+				break;
+			case 'X':
+				dot.newx = 5/6.0
+				break;
+		}
+
+	}
+
+	clearForces();
+
+	let x_locs = [1,2,3,4,5].map(x => x/6.0)
+
+	for(ind in x_locs){
+		let x_loc = x_locs[ind]
+
+		let subset_dots = dots.filter(dot => dot.newx == x_loc)
+		force = generateForce(subset_dots, x_loc, 0.5)
+		force.stop()
+		force.on("tick", ticked)
+		.restart()
+
+		//console.log(subset_dots)
+		svg.select("#count-" + ind)
+			.text("Count: " + subset_dots.length)
+	}
+
+
+}
+
+let nextButton = document.getElementById("next")
+let description = document.getElementById("description")
+
+descriptions = [
+"Let's look at Maine's 2018 2nd Congressional Election to see the differences between First Past the Post (FPTP) and Ranked Choice Voting (RCV). Here \
+each dot represents ~2,000 votes",
+"We can color each dot based off who their first choice was on the ballot.",
+"Now, let's split up each group based off who they voted for",
+"We've simulated what you're used to seeing in an election. Here Brian Poliquin has won using FPTP. But notice that Poliquin does not have a majority of \
+constituents who necessarily want him in office. Let's look at what happens when we look at the second-choice of Bond and Hoar, who do not have sufficient \
+votes to win.",
+"As it turns out, the majority of constituents prefer Jared F. Golden. In this case, RCV has produced a different winner than if we just counted all the first-choice votes with FPTP"]
+
+description.innerHTML = descriptions[0]
+
+let step = 0;
+nextButton.onclick = ()=> {
+
+	step += 1
+
+	description.innerHTML = descriptions[step]
+
+	switch(step){
+		case 1:
+			colorizeDots();
+			break;
+		case 2:
+			runRound1();
+			break;
+		case 3:
+			break;
+		case 4:
+			runRound2();
+	}
+
+
+};
 
 
 renderGraph()
