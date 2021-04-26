@@ -20,7 +20,8 @@ let firstround = {
 
 for(let i=0; i<firstround['0']; i++){
 	let toAdd = {
-		'rank1': '0'
+		'rank1': '0',
+		'votes': ['0']
 	}
 
 	dots.push(toAdd)
@@ -28,7 +29,8 @@ for(let i=0; i<firstround['0']; i++){
 
 for(let i=0; i<firstround['1']; i++){
 	let toAdd = {
-		'rank1': '1'
+		'rank1': '1',
+		'votes': ['1']
 	}
 
 	dots.push(toAdd)
@@ -36,18 +38,21 @@ for(let i=0; i<firstround['1']; i++){
 
 for(let i=0; i<firstround['2']; i++){
 	let toAdd = {
-		'rank1': '2'
+		'rank1': '2',
+		'votes': ['2']
 	}
 
 	if(i < 2){
 		toAdd['rank2'] = '0'
+		toAdd.votes.push('0')
 	}
 	else if(i < 2+4){
 		toAdd['rank2'] = '1'
+		toAdd.votes.push('1')
 	}
 	else{
 		toAdd['rank2'] = 'X'
-
+		toAdd.votes.push('X')
 	}
 
 	dots.push(toAdd)
@@ -55,18 +60,22 @@ for(let i=0; i<firstround['2']; i++){
 
 for(let i=0; i<firstround['3']; i++){
 	let toAdd = {
-		'rank1': '3'
+		'rank1': '3',
+		'votes': ['3']
+
 	}
 
 	if(i < 1){
 		toAdd['rank2'] = '0'
+		toAdd.votes.push('0')
 	}
 	else if(i < 1+1){
 		toAdd['rank2'] = '1'
+		toAdd.votes.push('1')
 	}
 	else{
 		toAdd['rank2'] = 'X'
-
+		toAdd.votes.push('X')
 	}
 
 	dots.push(toAdd)
@@ -74,7 +83,8 @@ for(let i=0; i<firstround['3']; i++){
 
 for(let i=0; i<firstround['X']; i++){
 	let toAdd = {
-		'rank1': 'X'
+		'rank1': 'X',
+		'votes': ['X']
 	}
 
 	dots.push(toAdd)
@@ -133,7 +143,8 @@ function colorizeDots() {
 	circle = svg.selectAll("circle")
 	.data(dots)
 	.style("fill", function(d) { 
-		switch(d.rank1){
+		//switch(d.rank1){
+		switch(d.votes[0]){
 			case '0':
 				return 'red'
 				break;
@@ -198,13 +209,95 @@ function generateForce(data, xcenter, ycenter){
 
 }
 
+function runRound(data, roundnum, tot_candidates, newy){
+
+	let ranknum = roundnum - 1;
+
+	for(let i=0; i<data.length; i++){
+		let dot = data[i];
+		dot.newy = 0.8
+
+
+
+		if(dot.votes[ranknum] == 'X'){
+			dot.newx = (tot_candidates)*1.0/(tot_candidates+1)
+		}
+		else{
+			dot.newx = (parseInt(dot.votes[ranknum]) + 1)*1.0/(tot_candidates+1)
+		}
+		//switch(dot.votes[ranknum]){
+		//	case '0':
+		//		dot.newx = 1/6.0
+		//		break;
+		//	case '1':
+		//		dot.newx = 2/6.0
+		//		break;
+		//	case '2':
+		//		dot.newx = 3/6.0
+		//		break;
+		//	case '3':
+		//		dot.newx = 4/6.0
+		//		break;
+		//	case 'X':
+		//		dot.newx = 5/6.0
+		//		break;
+		//}
+	}
+
+	clearForces()
+
+	//https://stackoverflow.com/questions/3746725/how-to-create-an-array-containing-1-n
+	//array from 1 to n mapped to number divided by tot_candidates
+	let x_locs = Array.from({length: tot_candidates}, (_, i) => i + 1).map(x => x*1.0/(tot_candidates+1))
+
+	let all_subset_dots = x_locs.map(x => dots.filter(dot => dot.newx == x));
+	let sizes = all_subset_dots.map(x => x.length)
+	let maxsize = Math.max(...sizes);
+
+	for(ind in all_subset_dots){
+		let subset_dots = all_subset_dots[ind]
+		let x_loc = x_locs[ind];
+
+		force = generateForce(subset_dots, x_loc, 0.5)
+		force.stop()
+		force.on("tick", ticked)
+		.restart()
+		svg.append("text")
+			.attr("class", "cluster-label")
+			.text(() => {
+
+				if(subset_dots.length == maxsize){
+					return "🏆" + legend[subset_dots[0].votes[ranknum]]
+				}
+				else{
+					return legend[subset_dots[0].votes[ranknum]]
+				}
+
+			})
+			.attr("id", legend[subset_dots[0].votes[ranknum]])
+			.attr("x", scaleX(x_loc))
+			.attr("y", scaleY(0.7))
+			.attr("text-anchor", "middle")
+
+		svg.append("text")
+			.attr("class", "cluster-number")
+			.attr("id", "count-" + ind)
+			.text("Count: " + subset_dots.length)
+			.attr("x", scaleX(x_loc))
+			.attr("y", scaleY(0.75))
+			.attr("text-anchor", "middle")
+			
+	}
+
+}
+
 function runRound1(){
 
 	for(let i=0; i<dots.length; i++){
 		let dot = dots[i];
 		dot.newy = 0.8
 
-		switch(dot.rank1){
+		switch(dot.votes[0]){
 			case '0':
 				dot.newx = 1/6.0
 				break;
@@ -226,23 +319,35 @@ function runRound1(){
 		//dot.starty = dot.y;
 	}
 
-	force.stop(); 
+	clearForces()
 
 	let x_locs = [1,2,3,4,5].map(x => x/6.0)
 
-	for(ind in x_locs){
-		let x_loc = x_locs[ind]
+	let all_subset_dots = x_locs.map(x => dots.filter(dot => dot.newx == x));
+	let sizes = all_subset_dots.map(x => x.length)
+	let maxsize = Math.max(...sizes);
 
-		let subset_dots = dots.filter(dot => dot.newx == x_loc)
+	for(ind in all_subset_dots){
+		let subset_dots = all_subset_dots[ind]
+		let x_loc = x_locs[ind];
+
 		force = generateForce(subset_dots, x_loc, 0.5)
 		force.stop()
 		force.on("tick", ticked)
 		.restart()
-
 		svg.append("text")
 			.attr("class", "cluster-label")
-			.text(legend[subset_dots[0].rank1])
-			.attr("id", legend[subset_dots[0].rank1])
+			.text(() => {
+
+				if(subset_dots.length == maxsize){
+					return "🏆" + legend[subset_dots[0].votes[0]]
+				}
+				else{
+					return legend[subset_dots[0].votes[0]]
+				}
+
+			})
+			.attr("id", legend[subset_dots[0].votes[0]])
 			.attr("x", scaleX(x_loc))
 			.attr("y", scaleY(0.7))
 			.attr("text-anchor", "middle")
@@ -264,7 +369,7 @@ function runRound2(){
 	for(let i=0; i<dots.length; i++){
 		let dot = dots[i];
 
-		switch(dot.rank2){
+		switch(dot.votes[1]){
 			case '0':
 				dot.newx = 1/6.0
 				break;
@@ -302,8 +407,66 @@ function runRound2(){
 			.text("Count: " + subset_dots.length)
 	}
 
+}
+
+//https://stackoverflow.com/questions/25582882/javascript-math-random-normal-distribution-gaussian-bell-curve/39187274#39187274
+function gaussianRand() {
+  var rand = 0;
+
+  for (var i = 0; i < 6; i += 1) {
+    rand += Math.random();
+  }
+
+  return rand / 6;
+}
+
+//https://stackoverflow.com/questions/3730510/javascript-sort-array-and-return-an-array-of-indicies-that-indicates-the-positi
+function getRankedIndices(arr) {
+
+	// make list with indices and values
+	indexedTest = arr.map(function(e,i){return {ind: i, val: e}});
+	// sort index/value couples, based on values
+	indexedTest.sort(function(x, y){return x.val > y.val ? 1 : x.val == y.val ? 0 : -1});
+	// make list keeping only indices
+	indices = indexedTest.map(function(e){return e.ind})
+	return indices
+}
+
+
+//type: distribution curve
+//candidates: array with dictionaries. each dictionary contains index: [0,1] value on political spectrum, id: unique identifier
+//size: number of people in election
+//return: array - ballots
+function simulate(type, candidates, size){
+	//createBallots() - sample from distribution curve - for each sample order the candidates
+	// - have taper off effect - if someone is so far from a candidate then make it a probability of whether or not they leave the ballot blank
+	
+	let ballots = []
+
+
+	for(let i = 0; i < size; i++){
+		let sample_index = gaussianRand();
+
+		let diff_indices = candidates.map(x => Math.abs(x.index - sample_index))
+
+		let ballot = getRankedIndices(diff_indices);
+		ballots.push(ballot)
+	}
+
+	console.log(ballots)
 
 }
+
+//let candidates = [
+//	{index: 0.1, id: 0},
+//	{index: 0.3, id: 1},
+//	{index: 0.4, id: 2},
+//	{index: 0.7, id: 3},
+//]
+//
+//simulate("", candidates, 20)
+
+
 
 let nextButton = document.getElementById("next")
 let description = document.getElementById("description")
@@ -332,11 +495,13 @@ nextButton.onclick = ()=> {
 			colorizeDots();
 			break;
 		case 2:
-			runRound1();
+			runRound(dots, 1, 5, 0.7)
+			//runRound1();
 			break;
 		case 3:
 			break;
 		case 4:
+			//runRound(dots, 2, 5, 0.7)
 			runRound2();
 	}
 
