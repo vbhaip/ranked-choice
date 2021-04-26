@@ -135,13 +135,13 @@ function ticked() {
 }
 
 
-var force = generateForce(dots, 0.5, 0.2)
-	force.stop()
+//var force = generateForce(dots, 0.5, 0.2)
+//	force.stop()
 
-function colorizeDots() {
+function colorizeDots(data) {
 
 	circle = svg.selectAll("circle")
-	.data(dots)
+	.data(data)
 	.style("fill", function(d) { 
 		//switch(d.rank1){
 		switch(d.votes[0]){
@@ -164,10 +164,10 @@ function colorizeDots() {
 
 }
 
-function renderGraph() {
+function renderGraph(data) {
 
 	circle = svg.selectAll("circle")
-	.data(dots)
+	.data(data)
 	.enter()
 	.append("circle")
 	.style("fill", function(d) { 
@@ -177,12 +177,24 @@ function renderGraph() {
 	.attr("cy", function(d) { return scaleY(d.y)} )
 	.attr("r", function(d) { return 4} )
 
-	const NUM_ITERATIONS = 1000;
+	//const NUM_ITERATIONS = 1000;
 	//force.tick(NUM_ITERATIONS);
-	force.on("tick", ticked)
-	.restart()
+	//force.on("tick", ticked)
+	//.restart()
 	//force.stop()
 }	
+
+function clearGraph() {
+	svg.selectAll("circle")
+	.remove()
+
+	svg.selectAll(".cluster-label")
+	.remove()
+
+	svg.selectAll(".cluster-number")
+	.remove()
+
+}
 
 
 function clearForces(){
@@ -201,7 +213,7 @@ function generateForce(data, xcenter, ycenter){
 	  .force('forceX', d3.forceX(0.5))
 	  .force('forceY', d3.forceY(0.5))
 	.force("charge", d3.forceManyBody().strength(1))
-	.force('center', d3.forceCenter(scaleX(xcenter), scaleY(ycenter)))
+	.force('center', d3.forceCenter(scaleX(xcenter), scaleY(ycenter)).strength(1.2))
 	
 	currentForces.push(force)
 
@@ -209,21 +221,32 @@ function generateForce(data, xcenter, ycenter){
 
 }
 
-function runRound(data, roundnum, tot_candidates, newy){
+function runRound(data, roundnum, tot_candidates, newy, legend){
+
+	//base round - just initialize basic force to the center
+	if(roundnum == 0){
+		let force = generateForce(data, 0.5, newy)
+		force.stop()
+		force.on("tick", ticked)
+		.restart()
+		return
+	}
 
 	let ranknum = roundnum - 1;
 
 	for(let i=0; i<data.length; i++){
 		let dot = data[i];
-		dot.newy = 0.8
+		//dot.newy = 0.8
 
 
 
-		if(dot.votes[ranknum] == 'X'){
-			dot.newx = (tot_candidates)*1.0/(tot_candidates+1)
-		}
-		else{
-			dot.newx = (parseInt(dot.votes[ranknum]) + 1)*1.0/(tot_candidates+1)
+		if(ranknum < dot.votes.length){
+			if(dot.votes[ranknum] == 'X'){
+				dot.newx = (tot_candidates)*1.0/(tot_candidates+1)
+			}
+			else{
+				dot.newx = (parseInt(dot.votes[ranknum]) + 1)*1.0/(tot_candidates+1)
+			}
 		}
 		//switch(dot.votes[ranknum]){
 		//	case '0':
@@ -250,7 +273,7 @@ function runRound(data, roundnum, tot_candidates, newy){
 	//array from 1 to n mapped to number divided by tot_candidates
 	let x_locs = Array.from({length: tot_candidates}, (_, i) => i + 1).map(x => x*1.0/(tot_candidates+1))
 
-	let all_subset_dots = x_locs.map(x => dots.filter(dot => dot.newx == x));
+	let all_subset_dots = x_locs.map(x => data.filter(dot => dot.newx == x));
 	let sizes = all_subset_dots.map(x => x.length)
 	let maxsize = Math.max(...sizes);
 
@@ -258,36 +281,58 @@ function runRound(data, roundnum, tot_candidates, newy){
 		let subset_dots = all_subset_dots[ind]
 		let x_loc = x_locs[ind];
 
-		force = generateForce(subset_dots, x_loc, 0.5)
+		force = generateForce(subset_dots, x_loc, newy)
 		force.stop()
 		force.on("tick", ticked)
 		.restart()
-		svg.append("text")
+	}
+	//console.log(all_subset_dots)
+	
+	if(roundnum == 1){
+		svg.selectAll(".cluster-label")
+			.data(all_subset_dots)
+			.enter()
+			.append("text")
 			.attr("class", "cluster-label")
-			.text(() => {
 
-				if(subset_dots.length == maxsize){
-					return "🏆" + legend[subset_dots[0].votes[ranknum]]
+		svg.selectAll(".cluster-number")
+			.data(all_subset_dots)
+			.enter()
+			.append("text")
+			.attr("class", "cluster-number")
+	}
+
+		svg.selectAll(".cluster-label")
+			.data(all_subset_dots)
+			.attr("class", "cluster-label")
+			.text((d,i) => {
+				//console.log("hi")
+
+				//if we're at the end
+				if(i == all_subset_dots.length - 1){
+					return legend['X']
+				}
+
+				if(d.length == maxsize){
+					return "🏆" + legend[i]
 				}
 				else{
-					return legend[subset_dots[0].votes[ranknum]]
+					return legend[i]
 				}
 
 			})
-			.attr("id", legend[subset_dots[0].votes[ranknum]])
-			.attr("x", scaleX(x_loc))
-			.attr("y", scaleY(0.7))
+			.attr("id", (d,i) => legend[i])
+			.attr("x", (d,i)  => scaleX(x_locs[i]))
+			.attr("y", scaleY(newy+0.2))
 			.attr("text-anchor", "middle")
 
-		svg.append("text")
-			.attr("class", "cluster-number")
+		svg.selectAll(".cluster-number")
+			.data(all_subset_dots)
 			.attr("id", "count-" + ind)
-			.text("Count: " + subset_dots.length)
-			.attr("x", scaleX(x_loc))
-			.attr("y", scaleY(0.75))
+			.text((d) => "Count: " + d.length)
+			.attr("x", (d,i) => scaleX(x_locs[i]))
+			.attr("y", scaleY(newy+0.25))
 			.attr("text-anchor", "middle")
-			
-	}
 
 }
 
@@ -450,28 +495,37 @@ function simulate(type, candidates, size){
 		let diff_indices = candidates.map(x => Math.abs(x.index - sample_index))
 
 		let ballot = getRankedIndices(diff_indices);
-		ballots.push(ballot)
+		ballot = ballot.map(x => x + "")
+		let dot = {votes: ballot, x: 0.5, y: 0.5}
+		ballots.push(dot)
 	}
 
 	console.log(ballots)
+	renderGraph(ballots)
+	runRound(ballots, 0, 5, 0.2, legend)
+	return ballots
 
 }
 
-//let candidates = [
-//	{index: 0.1, id: 0},
-//	{index: 0.3, id: 1},
-//	{index: 0.4, id: 2},
-//	{index: 0.7, id: 3},
-//]
-//
-//simulate("", candidates, 20)
+let candidates = [
+	{index: 0.1, id: 0},
+	{index: 0.3, id: 1},
+	{index: 0.4, id: 2},
+	{index: 0.7, id: 3},
+]
+
+//let ballots = simulate("", candidates, 20)
+//renderGraph(ballots)
+//runRound(ballots, 0, 5, 0.2, legend)
 
 
 
 let nextButton = document.getElementById("next")
+let prevButton = document.getElementById("prev")
 let description = document.getElementById("description")
 
 descriptions = [
+"What's the difference between ranked choice voting and the current voting system we use right now?",
 "Let's look at Maine's 2018 2nd Congressional Election to see the differences between First Past the Post (FPTP) and Ranked Choice Voting (RCV). Here \
 each dot represents ~2,000 votes",
 "We can color each dot based off who their first choice was on the ballot.",
@@ -484,29 +538,40 @@ votes to win.",
 description.innerHTML = descriptions[0]
 
 let step = 0;
-nextButton.onclick = ()=> {
+let update = ()=> {
 
-	step += 1
+	//step += 1
 
 	description.innerHTML = descriptions[step]
 
 	switch(step){
 		case 1:
-			colorizeDots();
+			renderGraph(dots)
+			runRound(dots, 0, 5, 0.2, legend)
 			break;
 		case 2:
-			runRound(dots, 1, 5, 0.7)
-			//runRound1();
+			colorizeDots(dots);
 			break;
 		case 3:
+			runRound(dots, 1, 5, 0.5, legend)
+			//runRound1();
 			break;
 		case 4:
-			//runRound(dots, 2, 5, 0.7)
-			runRound2();
+			break;
+		case 5:
+			runRound(dots, 2, 5, 0.5, legend)
+			//runRound2();
 	}
-
 
 };
 
+nextButton.onclick = () => {
+	step += 1;
+	update()
+}
 
-renderGraph()
+prevButton.onclick = () => {
+	step -= 1;
+	update()
+}
+
