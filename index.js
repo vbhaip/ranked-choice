@@ -140,7 +140,7 @@ function ticked() {
 
 function colorizeDots(data) {
 
-	circle = svg.selectAll("circle")
+	circle = svg.selectAll(".viz-circle")
 	.data(data)
 	.style("fill", function(d) { 
 		//switch(d.rank1){
@@ -166,10 +166,10 @@ function colorizeDots(data) {
 
 function renderGraph(data) {
 
-	circle = svg.selectAll("circle")
+	circle = svg.selectAll(".viz-circle")
 	.data(data)
-	.enter()
-	.append("circle")
+	.join("circle")
+	.attr("class", "viz-circle")
 	.style("fill", function(d) { 
 		return "black"; 
 	})
@@ -185,7 +185,7 @@ function renderGraph(data) {
 }	
 
 function clearGraph() {
-	svg.selectAll("circle")
+	svg.selectAll(".viz-circle")
 	.remove()
 
 	svg.selectAll(".cluster-label")
@@ -221,8 +221,82 @@ function generateForce(data, xcenter, ycenter){
 
 }
 
-function runRound(data, roundnum, tot_candidates, newy, legend){
+function initializeElectionData(data){
+	//data comes in as each item having a votes element
+	//first add an array to each item for the value for each round
+	//this should group all of the elements based off the first value
+	//then remove the lowest val and update all of the eliminated ones to their next val
+	
+	let currRound = 0
+	let currMaj = data.filter(x => !(x.votes.length == 0 || x.votes[0] == "X")).length/2
+	
+	data.forEach((item) => {
+		item.roundVal = [item.votes[0]]
+		item.currVoteInd = 0
+	})
 
+	let metadata = {}
+	metadata.currMaj = [currMaj]
+
+	let candidates = ['0','1','2','3']
+
+	let groups = candidates.map(x => data.filter( (item) => x == item.roundVal[0]))
+	console.log(groups)
+
+	let sizes = groups.map(x => x.length)
+	let maxsize = Math.max(...sizes);
+	let minsize = Math.min(...(sizes.filter(x => x != 0)));
+
+	console.log(maxsize)
+	console.log(currMaj)
+
+	while(maxsize <= currMaj && minsize < currMaj){
+
+		groups.forEach( group => {
+			if(group.length == minsize){
+				//we want to move all the items in this group to have their next votes
+				group.forEach(datum => {
+					datum.currVoteInd += 1
+				})
+			}
+				group.forEach( datum => {
+					if(datum.currVoteInd >= datum.votes.length){
+						datum.roundVal.push("X");
+					}
+					else{
+						datum.roundVal.push(datum.votes[datum.currVoteInd])
+					}
+				})
+		})
+
+		//since it's not included in candidates, we want to add X to stay in no vote category
+		data.filter(item => item.roundVal[item.roundVal.length-1]=='X').forEach(x => {
+			x.roundVal.push("X")
+		});
+
+		currRound += 1
+
+		//restablish groups
+		groups = candidates.map(x => data.filter( (item) => x == item.roundVal[item.roundVal.length - 1]))
+		console.log(groups)
+
+		sizes = groups.map(x => x.length)
+		maxsize = Math.max(...sizes);
+		minsize = Math.min(...(sizes.filter(x => x != 0)));
+		currMaj = data.filter(x => x.votes[x.currVoteInd] != "X").length/2
+		console.log(currMaj)
+
+		metadata.currMaj.push(currMaj)
+	}
+
+	metadata.rounds = currRound;
+
+	return metadata
+
+}
+
+function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=false){
+	clearForces()
 	//base round - just initialize basic force to the center
 	if(roundnum == 0){
 		let force = generateForce(data, 0.5, newy)
@@ -240,14 +314,22 @@ function runRound(data, roundnum, tot_candidates, newy, legend){
 
 
 
-		if(ranknum < dot.votes.length){
-			if(dot.votes[ranknum] == 'X'){
-				dot.newx = (tot_candidates)*1.0/(tot_candidates+1)
-			}
-			else{
-				dot.newx = (parseInt(dot.votes[ranknum]) + 1)*1.0/(tot_candidates+1)
-			}
+		let roundval = dot.roundVal[ranknum]
+		//console.log(roundval)
+		if(roundval == 'X'){
+			dot.newx = (tot_candidates)*1.0/(tot_candidates+1)
 		}
+		else{
+			dot.newx = (parseInt(roundval) + 1)*1.0/(tot_candidates+1)
+		}
+		//if(ranknum < dot.votes.length){
+		//	if(dot.votes[ranknum] == 'X'){
+		//		dot.newx = (tot_candidates)*1.0/(tot_candidates+1)
+		//	}
+		//	else{
+		//		dot.newx = (parseInt(dot.votes[ranknum]) + 1)*1.0/(tot_candidates+1)
+		//	}
+		//}
 		//switch(dot.votes[ranknum]){
 		//	case '0':
 		//		dot.newx = 1/6.0
@@ -267,7 +349,6 @@ function runRound(data, roundnum, tot_candidates, newy, legend){
 		//}
 	}
 
-	clearForces()
 
 	//https://stackoverflow.com/questions/3746725/how-to-create-an-array-containing-1-n
 	//array from 1 to n mapped to number divided by tot_candidates
@@ -289,21 +370,22 @@ function runRound(data, roundnum, tot_candidates, newy, legend){
 	//console.log(all_subset_dots)
 	
 	if(roundnum == 1){
-		svg.selectAll(".cluster-label")
-			.data(all_subset_dots)
-			.enter()
-			.append("text")
-			.attr("class", "cluster-label")
+		//svg.selectAll(".cluster-label")
+		//	.data(all_subset_dots)
+		//	.enter()
+		//	.append("text")
+		//	.attr("class", "cluster-label")
 
-		svg.selectAll(".cluster-number")
-			.data(all_subset_dots)
-			.enter()
-			.append("text")
-			.attr("class", "cluster-number")
+		//svg.selectAll(".cluster-number")
+		//	.data(all_subset_dots)
+		//	.enter()
+		//	.append("text")
+		//	.attr("class", "cluster-number")
 	}
 
 		svg.selectAll(".cluster-label")
 			.data(all_subset_dots)
+			.join("text")
 			.attr("class", "cluster-label")
 			.text((d,i) => {
 				//console.log("hi")
@@ -313,13 +395,19 @@ function runRound(data, roundnum, tot_candidates, newy, legend){
 					return legend['X']
 				}
 
-				if(d.length == maxsize){
+				if(show_winner && d.length == maxsize){
 					return "🏆" + legend[i]
 				}
 				else{
 					return legend[i]
 				}
 
+			})
+			.attr("font-weight", (d,i) => {
+				if(show_winner && d.length == maxsize){
+					return "bold"
+				}
+				return ""
 			})
 			.attr("id", (d,i) => legend[i])
 			.attr("x", (d,i)  => scaleX(x_locs[i]))
@@ -328,6 +416,8 @@ function runRound(data, roundnum, tot_candidates, newy, legend){
 
 		svg.selectAll(".cluster-number")
 			.data(all_subset_dots)
+			.join("text")
+			.attr("class", "cluster-number")
 			.attr("id", "count-" + ind)
 			.text((d) => "Count: " + d.length)
 			.attr("x", (d,i) => scaleX(x_locs[i]))
@@ -508,15 +598,57 @@ function simulate(type, candidates, size){
 }
 
 let candidates = [
-	{index: 0.1, id: 0},
-	{index: 0.3, id: 1},
-	{index: 0.4, id: 2},
-	{index: 0.7, id: 3},
+	{index: 0.3, id: 0, x: 10, y: 10},
+	{index: 0.4, id: 1, x: 20, y: 10},
+	{index: 0.6, id: 2, x: 30, y: 10},
+	{index: 0.7, id: 3, x: 40, y: 10},
 ]
 
 //let ballots = simulate("", candidates, 20)
 //renderGraph(ballots)
 //runRound(ballots, 0, 5, 0.2, legend)
+
+
+//let candidates = []
+
+//base code for selecting candidates on political spectrum
+//https://observablehq.com/@d3/circle-dragging-i
+let drag = () => {
+
+	let dragXScale = d3.scaleLinear()
+		.domain([0,100])
+		.range([0, 100])
+		.clamp(true)
+
+	function dragstarted(event, d) {
+		d3.select(this).raise().attr("stroke", "red");
+	}
+
+	function dragged(event, d) {
+		d3.select(this).attr("cx", d.x = dragXScale(event.x));
+		d.index = d.x/100.0
+	}
+
+	function dragended(event, d) {
+		d3.select(this).attr("stroke", null);
+	}
+
+	return d3.drag()
+		.on("start", dragstarted)
+		.on("drag", dragged)
+		.on("end", dragended);
+
+}
+
+svg.selectAll(".candidates")
+	.data(candidates)
+	.join("circle")
+	.attr("class", "candidates")
+	.attr("cx", d => d.x)
+    .attr("cy", d => d.y)
+	.attr("r", 4)
+	.call(drag())
+
 
 
 
@@ -547,13 +679,14 @@ let update = ()=> {
 	switch(step){
 		case 1:
 			renderGraph(dots)
+			initializeElectionData(dots)
 			runRound(dots, 0, 5, 0.2, legend)
 			break;
 		case 2:
 			colorizeDots(dots);
 			break;
 		case 3:
-			runRound(dots, 1, 5, 0.5, legend)
+			runRound(dots, 1, 5, 0.5, legend, true)
 			//runRound1();
 			break;
 		case 4:
