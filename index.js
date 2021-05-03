@@ -122,8 +122,8 @@ var currentForces = []
 function ticked() {
 
 	circle
-		.transition()
-		.duration(50)
+		//.transition()
+		//.duration(25)
 		.attr("cx", d => d.x)
 		.attr("cy", d => d.y)
 
@@ -210,10 +210,13 @@ function generateForce(data, xcenter, ycenter){
 
 	force = d3.forceSimulation(data)
 	.force("collide", d3.forceCollide(5).strength(1))
-	  .force('forceX', d3.forceX(0.5))
-	  .force('forceY', d3.forceY(0.5))
+	  .force('forceX', d3.forceX(scaleX(xcenter)))
+	  .force('forceY', d3.forceY(scaleY(ycenter)))
 	.force("charge", d3.forceManyBody().strength(1))
-	.force('center', d3.forceCenter(scaleX(xcenter), scaleY(ycenter)).strength(1.2))
+	//.force('center', d3.forceCenter(scaleX(xcenter), scaleY(ycenter)).strength(1))
+	//.alphaDecay(0.032)
+	.alpha(0.6)
+	//.velocityDecay(0.5)
 	
 	currentForces.push(force)
 
@@ -233,6 +236,8 @@ function initializeElectionData(data){
 	data.forEach((item) => {
 		item.roundVal = [item.votes[0]]
 		item.currVoteInd = 0
+		item.x = scaleX(item.x);
+		item.y = scaleX(item.y);
 	})
 
 	let metadata = {}
@@ -299,6 +304,13 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 	clearForces()
 	//base round - just initialize basic force to the center
 	if(roundnum == 0){
+
+		//come from the center location
+		//data.forEach(item => {
+		//	item.x = scaleX(0.5);
+		//	item.y = scaleY(newy);
+		//});
+		
 		let force = generateForce(data, 0.5, newy)
 		force.stop()
 		force.on("tick", ticked)
@@ -367,6 +379,10 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		force.on("tick", ticked)
 		.restart()
 	}
+	//force = generateForce(data, 0.5, newy)
+	//force.stop()
+	//force.on("tick", ticked)
+	//.restart()
 	//console.log(all_subset_dots)
 	
 	if(roundnum == 1){
@@ -661,11 +677,15 @@ descriptions = [
 "Let's look at Maine's 2018 2nd Congressional Election to see the differences between First Past the Post (FPTP) and Ranked Choice Voting (RCV). Here \
 each dot represents ~2,000 votes",
 "We can color each dot based off who their first choice was on the ballot.",
-"Now, let's split up each group based off who they voted for",
+"Now, let's split up each group based off who they voted for.",
 "We've simulated what you're used to seeing in an election. Here Brian Poliquin has won using FPTP. But notice that Poliquin does not have a majority of \
-constituents who necessarily want him in office. Let's look at what happens when we look at the second-choice of Bond and Hoar, who do not have sufficient \
-votes to win.",
-"As it turns out, the majority of constituents prefer Jared F. Golden. In this case, RCV has produced a different winner than if we just counted all the first-choice votes with FPTP"]
+constituents who necessarily want him in office. What if there was a better way we could elect candidates?",
+"Let's redo this election with a new method. In this method, when you fill out a ballot, you rank the candidates that you like.",
+"If we split up the votes, then it looks the same as before. But notice we have not declared a winner, because no candidate has a majority of candidates that voted for them. We know that Hoar cannot win, but we also have information on who their next choice is. Let's see what happens",
+"We moved the candidates votes to their next choice. Note that the 'No vote' choice means that the ballots did not specify their next choice (which is completely valid!). But notice we still don't who a majority of the citizens support. We can repeat the process, eliminating Bond and looking at her votes' next choices.",
+"As it turns out, the majority of constituents prefer Jared F. Golden. In this case, RCV has produced a different winner than if we just counted all the first-choice votes with FPTP",
+"Why does this matter? It means that people can vote for who they want to, like third party candidates, without worrying about who other people are voting for. It leads to less extreme candidates, and overall a better democracy."
+]
 
 description.innerHTML = descriptions[0]
 
@@ -692,7 +712,17 @@ let update = ()=> {
 		case 4:
 			break;
 		case 5:
+			runRound(dots, 0, 5, 0.2, legend)
+			break;
+		case 6:
+			runRound(dots, 1, 5, 0.5, legend)
+			break;
+		case 7:
 			runRound(dots, 2, 5, 0.5, legend)
+			break;
+		case 8:
+			runRound(dots, 3, 5, 0.5, legend, true)
+			break;
 			//runRound2();
 	}
 
