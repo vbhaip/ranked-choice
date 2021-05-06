@@ -334,31 +334,6 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		else{
 			dot.newx = (parseInt(roundval) + 1)*1.0/(tot_candidates+1)
 		}
-		//if(ranknum < dot.votes.length){
-		//	if(dot.votes[ranknum] == 'X'){
-		//		dot.newx = (tot_candidates)*1.0/(tot_candidates+1)
-		//	}
-		//	else{
-		//		dot.newx = (parseInt(dot.votes[ranknum]) + 1)*1.0/(tot_candidates+1)
-		//	}
-		//}
-		//switch(dot.votes[ranknum]){
-		//	case '0':
-		//		dot.newx = 1/6.0
-		//		break;
-		//	case '1':
-		//		dot.newx = 2/6.0
-		//		break;
-		//	case '2':
-		//		dot.newx = 3/6.0
-		//		break;
-		//	case '3':
-		//		dot.newx = 4/6.0
-		//		break;
-		//	case 'X':
-		//		dot.newx = 5/6.0
-		//		break;
-		//}
 	}
 
 
@@ -384,20 +359,6 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 	//force.on("tick", ticked)
 	//.restart()
 	//console.log(all_subset_dots)
-	
-	if(roundnum == 1){
-		//svg.selectAll(".cluster-label")
-		//	.data(all_subset_dots)
-		//	.enter()
-		//	.append("text")
-		//	.attr("class", "cluster-label")
-
-		//svg.selectAll(".cluster-number")
-		//	.data(all_subset_dots)
-		//	.enter()
-		//	.append("text")
-		//	.attr("class", "cluster-number")
-	}
 
 		svg.selectAll(".cluster-label")
 			.data(all_subset_dots)
@@ -442,123 +403,6 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 
 }
 
-function runRound1(){
-
-	for(let i=0; i<dots.length; i++){
-		let dot = dots[i];
-		dot.newy = 0.8
-
-		switch(dot.votes[0]){
-			case '0':
-				dot.newx = 1/6.0
-				break;
-			case '1':
-				dot.newx = 2/6.0
-				break;
-			case '2':
-				dot.newx = 3/6.0
-				break;
-			case '3':
-				dot.newx = 4/6.0
-				break;
-			case 'X':
-				dot.newx = 5/6.0
-				break;
-		}
-
-		//dot.startx = dot.x;
-		//dot.starty = dot.y;
-	}
-
-	clearForces()
-
-	let x_locs = [1,2,3,4,5].map(x => x/6.0)
-
-	let all_subset_dots = x_locs.map(x => dots.filter(dot => dot.newx == x));
-	let sizes = all_subset_dots.map(x => x.length)
-	let maxsize = Math.max(...sizes);
-
-	for(ind in all_subset_dots){
-		let subset_dots = all_subset_dots[ind]
-		let x_loc = x_locs[ind];
-
-		force = generateForce(subset_dots, x_loc, 0.5)
-		force.stop()
-		force.on("tick", ticked)
-		.restart()
-		svg.append("text")
-			.attr("class", "cluster-label")
-			.text(() => {
-
-				if(subset_dots.length == maxsize){
-					return "🏆" + legend[subset_dots[0].votes[0]]
-				}
-				else{
-					return legend[subset_dots[0].votes[0]]
-				}
-
-			})
-			.attr("id", legend[subset_dots[0].votes[0]])
-			.attr("x", scaleX(x_loc))
-			.attr("y", scaleY(0.7))
-			.attr("text-anchor", "middle")
-
-		svg.append("text")
-			.attr("class", "cluster-number")
-			.attr("id", "count-" + ind)
-			.text("Count: " + subset_dots.length)
-			.attr("x", scaleX(x_loc))
-			.attr("y", scaleY(0.75))
-			.attr("text-anchor", "middle")
-			
-	}
-
-}
-
-function runRound2(){
-
-	for(let i=0; i<dots.length; i++){
-		let dot = dots[i];
-
-		switch(dot.votes[1]){
-			case '0':
-				dot.newx = 1/6.0
-				break;
-			case '1':
-				dot.newx = 2/6.0
-				break;
-			case '2':
-				dot.newx = 3/6.0
-				break;
-			case '3':
-				dot.newx = 4/6.0
-				break;
-			case 'X':
-				dot.newx = 5/6.0
-				break;
-		}
-
-	}
-
-	clearForces();
-
-	let x_locs = [1,2,3,4,5].map(x => x/6.0)
-
-	for(ind in x_locs){
-		let x_loc = x_locs[ind]
-
-		let subset_dots = dots.filter(dot => dot.newx == x_loc)
-		force = generateForce(subset_dots, x_loc, 0.5)
-		force.stop()
-		force.on("tick", ticked)
-		.restart()
-
-		//console.log(subset_dots)
-		svg.select("#count-" + ind)
-			.text("Count: " + subset_dots.length)
-	}
-
-}
 
 //https://stackoverflow.com/questions/25582882/javascript-math-random-normal-distribution-gaussian-bell-curve/39187274#39187274
 function gaussianRand() {
