@@ -184,14 +184,19 @@ function renderGraph(data) {
 	//force.stop()
 }	
 
-function clearGraph() {
-	svg.selectAll(".viz-circle")
-	.remove()
+function clearGraph(savecircles=false) {
+	if(!savecircles){
+		svg.selectAll(".viz-circle")
+		.remove()
+	}
 
 	svg.selectAll(".cluster-label")
 	.remove()
 
 	svg.selectAll(".cluster-number")
+	.remove()
+
+	svg.selectAll(".toptext")
 	.remove()
 
 }
@@ -246,14 +251,14 @@ function initializeElectionData(data){
 	let candidates = ['0','1','2','3']
 
 	let groups = candidates.map(x => data.filter( (item) => x == item.roundVal[0]))
-	console.log(groups)
+	//console.log(groups)
 
 	let sizes = groups.map(x => x.length)
 	let maxsize = Math.max(...sizes);
 	let minsize = Math.min(...(sizes.filter(x => x != 0)));
 
-	console.log(maxsize)
-	console.log(currMaj)
+	//console.log(maxsize)
+	//console.log(currMaj)
 
 	while(maxsize <= currMaj && minsize < currMaj){
 
@@ -283,13 +288,13 @@ function initializeElectionData(data){
 
 		//restablish groups
 		groups = candidates.map(x => data.filter( (item) => x == item.roundVal[item.roundVal.length - 1]))
-		console.log(groups)
+		//console.log(groups)
 
 		sizes = groups.map(x => x.length)
 		maxsize = Math.max(...sizes);
 		minsize = Math.min(...(sizes.filter(x => x != 0)));
 		currMaj = data.filter(x => x.votes[x.currVoteInd] != "X").length/2
-		console.log(currMaj)
+		//console.log(currMaj)
 
 		metadata.currMaj.push(currMaj)
 	}
@@ -300,10 +305,12 @@ function initializeElectionData(data){
 
 }
 
-function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=false){
+function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=false, fptp=false){
 	clearForces()
 	//base round - just initialize basic force to the center
 	if(roundnum == 0){
+
+		clearGraph(savecircles=true)
 
 		//come from the center location
 		//data.forEach(item => {
@@ -360,46 +367,85 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 	//.restart()
 	//console.log(all_subset_dots)
 
-		svg.selectAll(".cluster-label")
-			.data(all_subset_dots)
-			.join("text")
-			.attr("class", "cluster-label")
-			.text((d,i) => {
-				//console.log("hi")
+	svg.selectAll(".cluster-label")
+		.data(all_subset_dots)
+		.join("text")
+		.attr("class", "cluster-label")
+		.text((d,i) => {
+			//console.log("hi")
 
-				//if we're at the end
-				if(i == all_subset_dots.length - 1){
-					return legend['X']
-				}
+			//if we're at the end
+			if(i == all_subset_dots.length - 1){
+				return legend['X']
+			}
 
-				if(show_winner && d.length == maxsize){
-					return "🏆" + legend[i]
-				}
-				else{
-					return legend[i]
-				}
+			if(show_winner && d.length == maxsize){
+				return "🏆" + legend[i]
+			}
+			else{
+				return legend[i]
+			}
 
-			})
-			.attr("font-weight", (d,i) => {
-				if(show_winner && d.length == maxsize){
-					return "bold"
-				}
-				return ""
-			})
-			.attr("id", (d,i) => legend[i])
-			.attr("x", (d,i)  => scaleX(x_locs[i]))
-			.attr("y", scaleY(newy+0.2))
+		})
+		.attr("font-weight", (d,i) => {
+			if(show_winner && d.length == maxsize){
+				return "bold"
+			}
+			return ""
+		})
+		.attr("id", (d,i) => legend[i])
+		.attr("x", (d,i)  => scaleX(x_locs[i]))
+		.attr("y", scaleY(newy+0.2))
+		.attr("text-anchor", "middle")
+
+	svg.selectAll(".cluster-number")
+		.data(all_subset_dots)
+		.join("text")
+		.attr("class", "cluster-number")
+		.attr("id", "count-" + ind)
+		.text((d) => "Count: " + d.length)
+		.attr("x", (d,i) => scaleX(x_locs[i]))
+		.attr("y", scaleY(newy+0.25))
+		.attr("text-anchor", "middle")
+
+	
+	//main text at middle top of viz
+	//create object if it doesnt exist
+	let votetype = svg.select("#votetype").node() 
+		? svg.select("#votetype") 
+		: svg.append("text")
+			.attr("id", "votetype")
+			.attr("x", scaleX(0.5))
+			.attr("y", scaleY(0.2))
 			.attr("text-anchor", "middle")
+			.attr("font-size", "20px")
+			.attr("class", "toptext")
 
-		svg.selectAll(".cluster-number")
-			.data(all_subset_dots)
-			.join("text")
-			.attr("class", "cluster-number")
-			.attr("id", "count-" + ind)
-			.text((d) => "Count: " + d.length)
-			.attr("x", (d,i) => scaleX(x_locs[i]))
-			.attr("y", scaleY(newy+0.25))
+	let subtext = svg.select("#subtext").node() 
+		? svg.select("#subtext") 
+		: svg.append("text")
+			.attr("id", "subtext")
+			.attr("x", scaleX(0.5))
+			.attr("y", scaleY(0.25))
 			.attr("text-anchor", "middle")
+			.attr("font-size", "15px")
+			.attr("class", "toptext")
+
+	console.log(votetype)
+	if(fptp){
+		votetype
+			.text("First Past the Post")
+		subtext
+			.text("Goal: Most Votes")
+	}
+	else{
+		votetype
+			.text("Ranked Choice")
+		subtext
+			.text("Goal: 50% votes = " + dots.meta["currMaj"][ranknum])
+	}
+
+	
 
 }
 
@@ -507,9 +553,45 @@ svg.selectAll(".candidates")
 	.attr("cx", d => d.x)
     .attr("cy", d => d.y)
 	.attr("r", 4)
+	.attr("id", (d,i) => "candidate" + i)
 	.call(drag())
+	.on("contextmenu", (event, d) => {
+		event.preventDefault();
+		d3.select(this).remove()
+		console.log(event.currentTarget.remove())
+		candidates.splice(event.currentTarget.id, 1)
+	})
 
+//maybe helpful http://bl.ocks.org/phil-pedruco/88cb8a51cdce45f13c7e
+function getGaussianLine(){
+	let normal = function(mean, variance) {
+		// Precompute portion of the function that does not depend on x
+		let predicate = 1 / Math.sqrt(variance * 2 * Math.PI);
 
+		console.log(predicate)
+		return function(x) {
+			// See the pdf function from http://en.wikipedia.org/wiki/Normal_distribution
+			return predicate * Math.exp( -Math.pow(x - mean, 2) / (2 * variance));
+		};
+	}
+
+	let xseries = [];
+	for (var i = 0; i <= 1000; i++) { xseries.push((i*1.0/1000-0.5)*6); }
+
+	let normalTransform = normal(0, 1)
+	let yseries = xseries.map(d => normalTransform(d));
+	console.log(yseries)
+	let combinedSeries = d3.zip(xseries, yseries);
+
+	console.log(combinedSeries)
+	let line = d3.line()
+		.x(d => d[0]*200/6+200)
+		.y(d => -d[1]*200+200)
+
+	d3.select("#viz").append('path').datum(combinedSeries)
+		.attr('d', line)
+		.attr("stroke", "red")
+}
 
 
 let nextButton = document.getElementById("next")
@@ -540,17 +622,23 @@ let update = ()=> {
 
 	description.innerHTML = descriptions[step]
 
+	let meta;
+
 	switch(step){
 		case 1:
 			renderGraph(dots)
-			initializeElectionData(dots)
-			runRound(dots, 0, 5, 0.2, legend)
+			meta = initializeElectionData(dots)
+			//console.log(meta)
+
+			//kinda weird doing this, but it works?
+			dots.meta = meta;
+			runRound(dots, 0, 5, 0.2, legend, fptp=true)
 			break;
 		case 2:
 			colorizeDots(dots);
 			break;
 		case 3:
-			runRound(dots, 1, 5, 0.5, legend, true)
+			runRound(dots, 1, 5, 0.5, legend, true, fptp=true)
 			//runRound1();
 			break;
 		case 4:
