@@ -245,7 +245,7 @@ function generateForce(data, xcenter, ycenter){
 
 }
 
-function initializeElectionData(data){
+function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{index: 2},{index: 3}]){
 	//data comes in as each item having a votes element
 	//first add an array to each item for the value for each round
 	//this should group all of the elements based off the first value
@@ -264,7 +264,12 @@ function initializeElectionData(data){
 	let metadata = {}
 	metadata.currMaj = [currMaj]
 
-	let candidates = ['0','1','2','3']
+	let candidates = []
+
+	candidatesraw.forEach((d,i) => {
+		candidates.push(i + "");
+	})
+	//console.log(candidates)
 
 	let groups = candidates.map(x => data.filter( (item) => x == item.roundVal[0]))
 	//console.log(groups)
@@ -272,6 +277,10 @@ function initializeElectionData(data){
 	let sizes = groups.map(x => x.length)
 	let maxsize = Math.max(...sizes);
 	let minsize = Math.min(...(sizes.filter(x => x != 0)));
+
+	let tempgroup = groups[sizes.indexOf(maxsize)][0]
+	let fptpWinner = tempgroup.votes[tempgroup.currVoteInd]
+	//console.log(fptpWinner)
 
 	//console.log(maxsize)
 	//console.log(currMaj)
@@ -327,7 +336,13 @@ function initializeElectionData(data){
 		//console.log(eliminated)
 	}
 
+	tempgroup = groups[sizes.indexOf(maxsize)][0]
+	let rankedWinner = tempgroup.votes[tempgroup.currVoteInd]
+	//console.log(rankedWinner)
+
 	metadata.rounds = currRound + 1;
+	metadata.fptpWinner = fptpWinner
+	metadata.rankedWinner = rankedWinner
 
 	return metadata
 
@@ -397,6 +412,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 	//force.on("tick", ticked)
 	//.restart()
 	//console.log(all_subset_dots)
+	//console.log(legend)
 
 	svg.selectAll(".cluster-label")
 		.data(all_subset_dots)
@@ -556,14 +572,14 @@ function simulate(type, candidates, size, rng=0.05, novote = 0.01){
 	for(let i = 0; i < size; i++){
 		let sample_index = gaussianRand();
 
-		let diff_indices = candidates.map(x => Math.abs(x.index - sample_index + rng*2*Math.random()))
+		let diff_indices = candidates.map(x => Math.abs(x.index - sample_index) + rng*2*Math.random())
 
 		let ballot = getRankedIndices(diff_indices);
 
 
 		//so first part might be deterministic, but later on it gets more random
 		for(let j = 0; j < ballot.length; j++){
-			let differfactor = 20*Math.abs(sample_index - diff_indices[j])
+			let differfactor = 20*Math.abs(diff_indices[j])
 			if(Math.random() < novote*differfactor){
 				ballot.splice(j, ballot.length - j, "X")
 			}
@@ -594,6 +610,21 @@ let candidates = [
 	{index: 0.6, id: 2},
 	{index: 0.7, id: 3},
 ]
+
+
+let simulationBallots;
+
+function updateSimulationInit() {
+
+	simulationBallots = simulate("", candidates, 200)
+	colorizeDots(simulationBallots)
+	meta = initializeElectionData(simulationBallots, candidates)
+	simulationBallots.meta = meta
+	runRound(simulationBallots, 0, 2, 0.5, legend)
+
+}
+
+
 
 //let ballots = simulate("", candidates, 20)
 //renderGraph(ballots)
@@ -644,6 +675,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 
 		function dragended(event, d) {
 			d3.select(this).attr("stroke", "black");
+			updateSimulationInit();
 		}
 
 		return d3.drag()
@@ -662,7 +694,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 		.attr("opacity","0.2")
 		.on("click", (event,d) => {
 			//console.log(event)
-			if(candidates.length < 10){
+			if(candidates.length < 8){
 				let ind = (event.x-xstart)/scaledw
 				candidates.push({
 					index: ind,
@@ -670,6 +702,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 					x: ind*scaledw+xstart,
 					y: scaleY(ymid)
 				})
+				updateSimulationInit();
 				drawCandSliders()
 			}
 		})
@@ -686,6 +719,10 @@ function drawCandidates(candidates, w, xmid, ymid){
 			.attr("id", (d,i) => "candidate" + i)
 			.call(drag())
 			.on("contextmenu", (event, d) => {
+				if(candidates.length < 2){
+					console.log("yo")
+					return;
+				}
 				event.preventDefault();
 				//d3.select(this).remove()
 				event.currentTarget.remove()
@@ -701,6 +738,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 					.transition()
 					.duration(500)
 					.attr("fill", (d,i) => scaleColor[i])
+					.call(updateSimulationInit)
 
 				//console.log(candidates)
 			})
@@ -769,6 +807,58 @@ let nextButton = document.getElementById("next")
 let prevButton = document.getElementById("prev")
 let description = document.getElementById("description")
 
+let simFPTPButton = document.getElementById("simfptp")
+let simRankedButton = document.getElementById("simranked")
+let resetButton= document.getElementById("reset")
+
+
+let newlegend = {
+	'0': 'Name 0',
+	'1': 'Name 1',
+	'2': 'Name 2',
+	'3': 'Name 3',
+	'4': 'Name 4',
+	'5': 'Name 5',
+	'6': 'Name 6',
+	'7': 'Name 7',
+	'8': 'Name 8',
+	'X': 'No vote'
+}
+
+
+simFPTPButton.hidden = true
+simRankedButton.hidden = true
+resetButton.hidden = true
+
+simFPTPButton.onclick = () => {
+	runRound(simulationBallots, 1, candidates.length + 1, 0.5, newlegend, show_winners=true, fptp=true)
+	resetButton.disabled = false;
+}
+simRankedButton.onclick = () => {
+	simRankedButton.disabled = true;
+	simFPTPButton.disabled = true;
+	for(let i = 1; i <= simulationBallots.meta["rounds"]; i++){
+		setTimeout( () => {
+			let showresult = false
+			if(i == simulationBallots.meta["rounds"]){
+				showresult = true;
+				simRankedButton.disabled = false;
+				simFPTPButton.disabled = false;
+			}
+			runRound(simulationBallots, i, candidates.length + 1, 0.5, newlegend, show_winner=showresult)
+		}, 3000*(i-0.5))
+
+	}
+	resetButton.disabled = false;
+
+}
+resetButton.onclick = () => {
+	clearGraph()
+	resetButton.disabled = true;
+
+}
+
+
 descriptions = [
 "What's the difference between ranked choice voting and the current voting system we use right now?",
 "Let's look at Maine's 2018 2nd Congressional Election to see the differences between First Past the Post (FPTP) and Ranked Choice Voting (RCV). Here \
@@ -833,26 +923,24 @@ let update = ()=> {
 		case 10:
 			drawSimulation()
 			clearGraph()
+			updateSimulationInit()
+
+			simFPTPButton.hidden = false 
+			simRankedButton.hidden = false 
+			resetButton.hidden = false 
+			resetButton.disabled= true 
+
 			break;
 		case 11:
-			ballots = simulate("", candidates, 200)
-			colorizeDots(ballots)
-			meta = initializeElectionData(ballots)
-			ballots.meta = meta
-			console.log(meta)
-			runRound(ballots, 0, 2, 0.5, legend)
+			//ballots = simulate("", candidates, 200)
+			//colorizeDots(ballots)
+			//meta = initializeElectionData(ballots, candidates)
+			//ballots.meta = meta
+			////console.log(meta)
+			//runRound(ballots, 0, 2, 0.5, legend)
 			break;
 		case 12:
-			for(let i = 0; i <= ballots.meta["rounds"]; i++){
-				setTimeout( () => {
-					let showresult = false
-					if(i == ballots.meta["rounds"]){
-						showresult = true;
-					}
-					runRound(ballots, i, candidates.length + 1, 0.5, legend, show_winner=showresult)
-				}, 3000*i)
-
-			}
+			break;
 	}
 
 };
