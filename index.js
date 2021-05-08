@@ -116,6 +116,8 @@ var svg = d3.select("#viz")
 var scaleX = d3.scaleLinear().domain([0, 1]).range([0, width])
 var scaleY = d3.scaleLinear().domain([0, 1]).range([0, height])
 
+var scaleColor = d3.schemeDark2;
+
 var currentForces = []
 
 
@@ -138,27 +140,38 @@ function ticked() {
 //var force = generateForce(dots, 0.5, 0.2)
 //	force.stop()
 
-function colorizeDots(data) {
+function colorizeDots(data, maine=false) {
 
 	circle = svg.selectAll(".viz-circle")
 	.data(data)
 	.style("fill", function(d) { 
 		//switch(d.rank1){
-		switch(d.votes[0]){
-			case '0':
-				return 'red'
-				break;
-			case '1':
-				return 'blue'
-				break;
-			case '2':
-				return 'green'
-				break;
-			case '3':
-				return 'orange'
-				break;
+		
+		if(maine){
+			switch(d.votes[0]){
+				case '0':
+					return 'red'
+					break;
+				case '1':
+					return 'blue'
+					break;
+				case '2':
+					return 'green'
+					break;
+				case '3':
+					return 'orange'
+					break;
 
+			}
 		}
+
+		if(d.votes[0] == "X"){
+			return "black";
+		}
+
+		return scaleColor[parseInt(d.votes[0])];
+
+
 		return "black"; 
 	})
 
@@ -189,6 +202,9 @@ function clearGraph(savecircles=false) {
 		svg.selectAll(".viz-circle")
 		.remove()
 	}
+
+	svg.selectAll(".viz-circle")
+		.style("opacity", 1)
 
 	svg.selectAll(".cluster-label")
 	.remove()
@@ -259,15 +275,25 @@ function initializeElectionData(data){
 
 	//console.log(maxsize)
 	//console.log(currMaj)
+	let eliminated = new Set([])
 
 	while(maxsize <= currMaj && minsize < currMaj){
 
+		groups.forEach(group => {
+			if(group.length == minsize){
+				eliminated.add(group[0].votes[group[0].currVoteInd]);
+			}
+		})
 		groups.forEach( group => {
 			if(group.length == minsize){
 				//we want to move all the items in this group to have their next votes
 				group.forEach(datum => {
-					datum.currVoteInd += 1
+					
+					while(eliminated.has(datum.votes[datum.currVoteInd])){
+						datum.currVoteInd += 1
+					}
 				})
+				//console.log(group)
 			}
 				group.forEach( datum => {
 					if(datum.currVoteInd >= datum.votes.length){
@@ -297,9 +323,11 @@ function initializeElectionData(data){
 		//console.log(currMaj)
 
 		metadata.currMaj.push(currMaj)
+
+		//console.log(eliminated)
 	}
 
-	metadata.rounds = currRound;
+	metadata.rounds = currRound + 1;
 
 	return metadata
 
@@ -351,6 +379,9 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 	let all_subset_dots = x_locs.map(x => data.filter(dot => dot.newx == x));
 	let sizes = all_subset_dots.map(x => x.length)
 	let maxsize = Math.max(...sizes);
+	let minsize = Math.min(...sizes);
+
+	let winnerind = sizes.indexOf(maxsize)
 
 	for(ind in all_subset_dots){
 		let subset_dots = all_subset_dots[ind]
@@ -393,7 +424,13 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			}
 			return ""
 		})
-		.attr("id", (d,i) => legend[i])
+		.attr("text-decoration", (d,i) => {
+
+			if(d.length == 0){
+				return "line-through"
+			}
+		})
+		.attr("id", (d,i) => "cluster-label-" + i)
 		.attr("x", (d,i)  => scaleX(x_locs[i]))
 		.attr("y", scaleY(newy+0.2))
 		.attr("text-anchor", "middle")
@@ -402,11 +439,35 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		.data(all_subset_dots)
 		.join("text")
 		.attr("class", "cluster-number")
-		.attr("id", "count-" + ind)
+		.attr("id", "cluster-number-" + i)
 		.text((d) => "Count: " + d.length)
 		.attr("x", (d,i) => scaleX(x_locs[i]))
 		.attr("y", scaleY(newy+0.25))
 		.attr("text-anchor", "middle")
+
+	svg.selectAll(".cluster-label,.cluster-number")
+		.transition()
+		.duration(500)
+		.style("opacity", d => {
+			if(show_winner && d.length != maxsize){
+				return 0.1
+			}
+		})
+
+	//console.log(winnerind)
+	svg.selectAll(".viz-circle")
+		.transition()
+		.duration(500)
+		.style("opacity", d => {
+			
+			if(show_winner && d.roundVal[ranknum] != winnerind){
+				return 0.1
+			}
+			else{
+				return 1
+			}
+
+		})
 
 	
 	//main text at middle top of viz
@@ -431,7 +492,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			.attr("font-size", "15px")
 			.attr("class", "toptext")
 
-	console.log(votetype)
+	//console.log(votetype)
 	if(fptp){
 		votetype
 			.text("First Past the Post")
@@ -440,9 +501,9 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 	}
 	else{
 		votetype
-			.text("Ranked Choice")
+			.text("Ranked Choice (Round " + roundnum + ")")
 		subtext
-			.text("Goal: 50% votes = " + dots.meta["currMaj"][ranknum])
+			.text("Goal: 50% votes = " + data.meta["currMaj"][ranknum])
 	}
 
 	
@@ -473,12 +534,19 @@ function getRankedIndices(arr) {
 	return indices
 }
 
+function shuffleArray(array, start) {
+    for (let i = array.length - 1; i > start; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
 
 //type: distribution curve
 //candidates: array with dictionaries. each dictionary contains index: [0,1] value on political spectrum, id: unique identifier
 //size: number of people in election
+//rng: how much randomness to add to people's votes
 //return: array - ballots
-function simulate(type, candidates, size){
+function simulate(type, candidates, size, rng=0.05, novote = 0.01){
 	//createBallots() - sample from distribution curve - for each sample order the candidates
 	// - have taper off effect - if someone is so far from a candidate then make it a probability of whether or not they leave the ballot blank
 	
@@ -488,15 +556,32 @@ function simulate(type, candidates, size){
 	for(let i = 0; i < size; i++){
 		let sample_index = gaussianRand();
 
-		let diff_indices = candidates.map(x => Math.abs(x.index - sample_index))
+		let diff_indices = candidates.map(x => Math.abs(x.index - sample_index + rng*2*Math.random()))
 
 		let ballot = getRankedIndices(diff_indices);
+
+
+		//so first part might be deterministic, but later on it gets more random
+		for(let j = 0; j < ballot.length; j++){
+			let differfactor = 20*Math.abs(sample_index - diff_indices[j])
+			if(Math.random() < novote*differfactor){
+				ballot.splice(j, ballot.length - j, "X")
+			}
+
+			if(Math.random() < rng){
+				shuffleArray(ballot, j)
+				break;
+			}
+		}
+
+
 		ballot = ballot.map(x => x + "")
+
 		let dot = {votes: ballot, x: 0.5, y: 0.5}
 		ballots.push(dot)
 	}
 
-	console.log(ballots)
+	//console.log(ballots)
 	renderGraph(ballots)
 	runRound(ballots, 0, 5, 0.2, legend)
 	return ballots
@@ -504,10 +589,10 @@ function simulate(type, candidates, size){
 }
 
 let candidates = [
-	{index: 0.3, id: 0, x: 10, y: 10},
-	{index: 0.4, id: 1, x: 20, y: 10},
-	{index: 0.6, id: 2, x: 30, y: 10},
-	{index: 0.7, id: 3, x: 40, y: 10},
+	{index: 0.3, id: 0},
+	{index: 0.4, id: 1},
+	{index: 0.6, id: 2},
+	{index: 0.7, id: 3},
 ]
 
 //let ballots = simulate("", candidates, 20)
@@ -519,56 +604,126 @@ let candidates = [
 
 //base code for selecting candidates on political spectrum
 //https://observablehq.com/@d3/circle-dragging-i
-let drag = () => {
 
-	let dragXScale = d3.scaleLinear()
-		.domain([0,100])
-		.range([0, 100])
-		.clamp(true)
+function drawCandidates(candidates, w, xmid, ymid){
 
-	function dragstarted(event, d) {
-		d3.select(this).raise().attr("stroke", "red");
-	}
 
-	function dragged(event, d) {
-		d3.select(this).attr("cx", d.x = dragXScale(event.x));
-		d.index = d.x/100.0
-	}
 
-	function dragended(event, d) {
-		d3.select(this).attr("stroke", null);
-	}
+	let scaledw = w*width
 
-	return d3.drag()
-		.on("start", dragstarted)
-		.on("drag", dragged)
-		.on("end", dragended);
+	let xstart = scaleX(xmid) - scaledw/2
+	let xend = scaleX(xmid) + scaledw/2
 
-}
+	//console.log(xstart)
+	//console.log(xend)
 
-svg.selectAll(".candidates")
-	.data(candidates)
-	.join("circle")
-	.attr("class", "candidates")
-	.attr("cx", d => d.x)
-    .attr("cy", d => d.y)
-	.attr("r", 4)
-	.attr("id", (d,i) => "candidate" + i)
-	.call(drag())
-	.on("contextmenu", (event, d) => {
-		event.preventDefault();
-		d3.select(this).remove()
-		console.log(event.currentTarget.remove())
-		candidates.splice(event.currentTarget.id, 1)
+	candidates.forEach((d) => {
+		d.x = d.index*scaledw+xstart
+		d.y = scaleY(ymid)
 	})
 
+	let drag = () => {
+
+		let dragXScale = d3.scaleLinear()
+			.domain([xstart,xend])
+			.range([xstart, xend])
+			.clamp(true)
+
+		function dragstarted(event, d) {
+			d3.select(this).raise().attr("stroke", null);
+		}
+
+		function dragged(event, d) {
+			//console.log(event.x)
+			d3.select(this).attr("cx", d.x = dragXScale(event.x));
+			//console.log(d.x)
+			//console.log(d.index)
+			//console.log()
+			d.index = (d.x-xstart)/scaledw
+		}
+
+		function dragended(event, d) {
+			d3.select(this).attr("stroke", "black");
+		}
+
+		return d3.drag()
+			.on("start", dragstarted)
+			.on("drag", dragged)
+			.on("end", dragended);
+
+	}
+
+	svg.append("rect")
+		.attr("x", xstart)
+		.attr("y", scaleY(ymid-0.02))
+		.attr("width", scaledw)
+		.attr("height", scaleY(0.04))
+		.attr("fill","grey")
+		.attr("opacity","0.2")
+		.on("click", (event,d) => {
+			//console.log(event)
+			if(candidates.length < 10){
+				let ind = (event.x-xstart)/scaledw
+				candidates.push({
+					index: ind,
+					id: candidates.length,
+					x: ind*scaledw+xstart,
+					y: scaleY(ymid)
+				})
+				drawCandSliders()
+			}
+		})
+
+	//console.log(candidates)
+	function drawCandSliders(){
+		svg.selectAll(".candidates")
+			.data(candidates)
+			.join("circle")
+			.attr("class", "candidates")
+			.attr("cx", d =>  d.x)
+			.attr("cy", d => d.y)
+			.attr("r", 6)
+			.attr("id", (d,i) => "candidate" + i)
+			.call(drag())
+			.on("contextmenu", (event, d) => {
+				event.preventDefault();
+				//d3.select(this).remove()
+				event.currentTarget.remove()
+				candidates.splice(d.id, 1)
+
+				//update ids to match index in array
+				candidates.forEach((d,i) => {
+					d.id = i;
+				});
+
+				//recolorize dots
+				svg.selectAll(".candidates")
+					.transition()
+					.duration(500)
+					.attr("fill", (d,i) => scaleColor[i])
+
+				//console.log(candidates)
+			})
+			.attr("fill", (d,i) => scaleColor[i])
+			.attr("stroke", "black")
+	}
+
+	drawCandSliders();
+}
+
 //maybe helpful http://bl.ocks.org/phil-pedruco/88cb8a51cdce45f13c7e
-function getGaussianLine(){
+//http://jsfiddle.net/NQDx9/1/
+function getGaussianLine(w, h, xcenter, ycenter){
+	w = width*w
+	h = height*h
+	xcenter = scaleX(xcenter)
+	ycenter = scaleY(ycenter)
+	 
 	let normal = function(mean, variance) {
 		// Precompute portion of the function that does not depend on x
 		let predicate = 1 / Math.sqrt(variance * 2 * Math.PI);
 
-		console.log(predicate)
+		//console.log(predicate)
 		return function(x) {
 			// See the pdf function from http://en.wikipedia.org/wiki/Normal_distribution
 			return predicate * Math.exp( -Math.pow(x - mean, 2) / (2 * variance));
@@ -576,21 +731,37 @@ function getGaussianLine(){
 	}
 
 	let xseries = [];
-	for (var i = 0; i <= 1000; i++) { xseries.push((i*1.0/1000-0.5)*6); }
+	for (var i = 0; i <= 1000; i++) { xseries.push((i*1.0/1000-0.5)); }
 
-	let normalTransform = normal(0, 1)
+	let normalTransform = normal(0, .5/8)
 	let yseries = xseries.map(d => normalTransform(d));
-	console.log(yseries)
+	let max = Math.max(...yseries)
+	yseries = yseries.map(d => d/max)
+	//console.log(yseries)
 	let combinedSeries = d3.zip(xseries, yseries);
 
-	console.log(combinedSeries)
+	//console.log(combinedSeries)
 	let line = d3.line()
-		.x(d => d[0]*200/6+200)
-		.y(d => -d[1]*200+200)
+		.x(d => d[0]*w+(xcenter))
+		.y(d => (1-d[1])*(h)+(ycenter))
 
-	d3.select("#viz").append('path').datum(combinedSeries)
-		.attr('d', line)
-		.attr("stroke", "red")
+	return [line, combinedSeries]
+	//d3.select("#viz").append('path').datum(combinedSeries)
+	//	.attr('d', line)
+	//	.attr("stroke", "red")
+}
+
+function drawSimulation(){
+	let [gaussline, series] = getGaussianLine(0.5, 0.25, 0.5, 0.1)
+	drawCandidates(candidates, 0.5, 0.5, 0.35)
+
+	//console.log(gaussline)
+	svg.append('path')
+		.datum(series)
+		.attr('d', gaussline)
+		.attr("fill", "url(#redbluegrad")
+		.attr("id", "gaussline")
+
 }
 
 
@@ -610,12 +781,14 @@ constituents who necessarily want him in office. What if there was a better way 
 "If we split up the votes, then it looks the same as before. But notice we have not declared a winner, because no candidate has a majority of candidates that voted for them. We know that Hoar cannot win, but we also have information on who their next choice is. Let's see what happens",
 "We moved the candidates votes to their next choice. Note that the 'No vote' choice means that the ballots did not specify their next choice (which is completely valid!). But notice we still don't who a majority of the citizens support. We can repeat the process, eliminating Bond and looking at her votes' next choices.",
 "As it turns out, the majority of constituents prefer Jared F. Golden. In this case, RCV has produced a different winner than if we just counted all the first-choice votes with FPTP",
-"Why does this matter? It means that people can vote for who they want to, like third party candidates, without worrying about who other people are voting for. It leads to less extreme candidates, and overall a better democracy."
+"Why does this matter? It means that people can vote for who they want to, like third party candidates, without worrying about who other people are voting for. It leads to less extreme candidates, and overall a better democracy.",
+"Now, you can explore Ranked Choice Voting for yourself."
 ]
 
 description.innerHTML = descriptions[0]
 
 let step = 0;
+var ballots;
 let update = ()=> {
 
 	//step += 1
@@ -635,7 +808,7 @@ let update = ()=> {
 			runRound(dots, 0, 5, 0.2, legend, fptp=true)
 			break;
 		case 2:
-			colorizeDots(dots);
+			colorizeDots(dots, maine=true);
 			break;
 		case 3:
 			runRound(dots, 1, 5, 0.5, legend, true, fptp=true)
@@ -655,7 +828,31 @@ let update = ()=> {
 		case 8:
 			runRound(dots, 3, 5, 0.5, legend, true)
 			break;
-			//runRound2();
+		case 9:
+			break;
+		case 10:
+			drawSimulation()
+			clearGraph()
+			break;
+		case 11:
+			ballots = simulate("", candidates, 200)
+			colorizeDots(ballots)
+			meta = initializeElectionData(ballots)
+			ballots.meta = meta
+			console.log(meta)
+			runRound(ballots, 0, 2, 0.5, legend)
+			break;
+		case 12:
+			for(let i = 0; i <= ballots.meta["rounds"]; i++){
+				setTimeout( () => {
+					let showresult = false
+					if(i == ballots.meta["rounds"]){
+						showresult = true;
+					}
+					runRound(ballots, i, candidates.length + 1, 0.5, legend, show_winner=showresult)
+				}, 3000*i)
+
+			}
 	}
 
 };
