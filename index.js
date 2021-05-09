@@ -106,14 +106,18 @@ var legend = {
 
 var circle;
 
-var width = 800;
+var width = window.screen.width;
+var leftwidth = window.screen.width*.63;
+var rightwidth = width - leftwidth;
 var height = 500;
 
 var svg = d3.select("#viz")
 	.attr("width", width)
 	.attr("height", height)
 
-var scaleX = d3.scaleLinear().domain([0, 1]).range([0, width])
+var scaleX = d3.scaleLinear().domain([0, 1]).range([0, leftwidth])
+var scaleRightX= d3.scaleLinear().domain([0, 1]).range([leftwidth, width])
+
 var scaleY = d3.scaleLinear().domain([0, 1]).range([0, height])
 
 var scaleColor = d3.schemeDark2;
@@ -128,6 +132,7 @@ var tooltip = d3.select("body")
 
 var simdistrib = "gauss"
 
+var orderingmap = [0, 1, 2, 3]
 
 function ticked() {
 
@@ -209,6 +214,9 @@ function renderGraph(data) {
 			.transition()
 			.duration(3000)
 			.style('opacity', 0)
+			.transition()
+			.delay(1000)
+			.style("display", "none")
 	})
 	.on('mouseout', function(e) {
 		tooltip
@@ -358,31 +366,32 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 		//console.log(currMaj)
 
 		metadata.currMaj.push(currMaj)
+		//console.log(data)
 
-		data.forEach( (d, i) => {
-			//let text = "Voter " + i + " ballot: " +  "\n";
-			let text = "Voter " + i + " ballot: \n";
-			d.votes.forEach((vote,i) => {
-				if(vote != "X"){
-					if(maine){
-						text += (i+1) + ". " + legend[vote] + "\n";
-					}
-					else{
-						text += (i+1) + ". " + newlegend[vote] + "\n";
-					}
-				}
-			});
-			//if(d.votes[d.votes.length - 1] == 'X'){
-			//	text += d.votes.slice(0, d.votes.length - 1)
-			//}
-			//else{
-			//	text += d.votes
-			//}
-			d.text = text
-		})
 
 		//console.log(eliminated)
 	}
+	data.forEach( (d, i) => {
+		//let text = "Voter " + i + " ballot: " +  "\n";
+		let text = "Voter " + i + " ballot: \n";
+		d.votes.forEach((vote,i) => {
+			if(vote != "X"){
+				if(maine){
+					text += (i+1) + ". " + legend[vote] + "\n";
+				}
+				else{
+					text += (i+1) + ". " + newlegend[vote] + "\n";
+				}
+			}
+		});
+		//if(d.votes[d.votes.length - 1] == 'X'){
+		//	text += d.votes.slice(0, d.votes.length - 1)
+		//}
+		//else{
+		//	text += d.votes
+		//}
+		d.text = text
+	})
 
 	tempgroup = groups[sizes.indexOf(maxsize)][0]
 	let rankedWinner = tempgroup.votes[tempgroup.currVoteInd]
@@ -430,6 +439,8 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			dot.newx = (tot_candidates)*1.0/(tot_candidates+1)
 		}
 		else{
+			//console.log(orderingmap)
+			//roundval = orderingmap[parseInt(roundval)]
 			dot.newx = (parseInt(roundval) + 1)*1.0/(tot_candidates+1)
 		}
 	}
@@ -440,15 +451,24 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 	let x_locs = Array.from({length: tot_candidates}, (_, i) => i + 1).map(x => x*1.0/(tot_candidates+1))
 
 	let all_subset_dots = x_locs.map(x => data.filter(dot => dot.newx == x));
+	//console.log(all_subset_dots)
+
 	let sizes = all_subset_dots.map(x => x.length)
 	let maxsize = Math.max(...sizes);
 	let minsize = Math.min(...sizes);
 
 	let winnerind = sizes.indexOf(maxsize)
+	//console.log(winnerind)
 
 	for(ind in all_subset_dots){
 		let subset_dots = all_subset_dots[ind]
-		let x_loc = x_locs[ind];
+		//console.log(x_locs)
+		let x_loc = x_locs[orderingmap.indexOf(parseInt(ind))];
+		
+		//value is X so should be at the end
+		if(ind == tot_candidates - 1){
+			x_loc = x_locs[ind]
+		}
 
 		force = generateForce(subset_dots, x_loc, newy)
 		force.stop()
@@ -474,16 +494,16 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 				return legend['X']
 			}
 
-			if(show_winner && d.length == maxsize){
-				return "🏆" + legend[i]
+			if(show_winner && all_subset_dots[orderingmap[i]].length == maxsize){
+				return "🏆" + legend[orderingmap[i]]
 			}
 			else{
-				return legend[i]
+				return legend[orderingmap[i]]
 			}
 
 		})
 		.attr("font-weight", (d,i) => {
-			if(show_winner && d.length == maxsize){
+			if(show_winner && i < all_subset_dots.length - 1 && all_subset_dots[orderingmap[i]].length == maxsize){
 				return "bold"
 			}
 			return ""
@@ -505,17 +525,38 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		.attr("class", "cluster-number")
 		.attr("id", "cluster-number-" + i)
 		.text((d) => "Count: " + d.length)
-		.attr("x", (d,i) => scaleX(x_locs[i]))
+		.attr("x", (d,i) => {
+			if(i == all_subset_dots.length - 1){
+				return scaleX(x_locs[all_subset_dots.length - 1])
+			}
+			return scaleX(x_locs[orderingmap.indexOf(i)])
+		})
 		.attr("y", scaleY(newy+0.25))
 		.attr("text-anchor", "middle")
 
-	svg.selectAll(".cluster-label,.cluster-number")
+	svg.selectAll(".cluster-label")
 		.transition()
 		.duration(500)
-		.style("opacity", d => {
-			if(show_winner && d.length != maxsize){
+		.style("opacity", (d,i) => {
+			if(show_winner && i == all_subset_dots.length - 1){
 				return 0.1
 			}
+			if(show_winner && all_subset_dots[orderingmap[i]].length != maxsize){
+				return 0.1
+			}
+			return 1
+		})
+	svg.selectAll(".cluster-number")
+		.transition()
+		.duration(500)
+		.style("opacity", (d,i) => {
+			if(show_winner && i == all_subset_dots.length - 1){
+				return 0.1
+			}
+			if(show_winner && all_subset_dots[orderingmap[i]].length != maxsize){
+				return 0.1
+			}
+			return 1
 		})
 
 	//console.log(winnerind)
@@ -714,10 +755,10 @@ function drawCandidates(candidates, w, xmid, ymid){
 
 
 
-	let scaledw = w*width
+	let scaledw = w*rightwidth
 
-	let xstart = scaleX(xmid) - scaledw/2
-	let xend = scaleX(xmid) + scaledw/2
+	let xstart = scaleRightX(xmid) - scaledw/2
+	let xend = scaleRightX(xmid) + scaledw/2
 
 	//console.log(xstart)
 	//console.log(xend)
@@ -750,6 +791,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 		function dragended(event, d) {
 			d3.select(this).attr("stroke", "black");
 			updateSimulationInit();
+			setOrderingMap()
 		}
 
 		return d3.drag()
@@ -781,6 +823,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 					})
 					updateSimulationInit();
 					drawCandSliders()
+					setOrderingMap()
 				}
 			})
 			.attr("id", "rectslider")
@@ -819,6 +862,8 @@ function drawCandidates(candidates, w, xmid, ymid){
 					.attr("fill", (d,i) => scaleColor[i])
 					.call(updateSimulationInit)
 
+				setOrderingMap()
+
 				//console.log(candidates)
 			})
 			.attr("fill", (d,i) => scaleColor[i])
@@ -830,11 +875,14 @@ function drawCandidates(candidates, w, xmid, ymid){
 					.style('display', 'block')
 					.style('opacity', 1)
 					.text(newlegend['' + d.id])
-					.style('left', (event.pageX+15) + 'px')
-					.style('top', (event.pageY-15) + 'px')
+					.style('left', (event.pageX-15) + 'px')
+					.style('top', (event.pageY+15) + 'px')
 					.transition()
 					.duration(2500)
 					.style('opacity', 0)
+					.transition()
+					.delay(1000)
+					.style("display", "none")
 			})
 			.on('mouseout', function(e) {
 				tooltip
@@ -844,15 +892,21 @@ function drawCandidates(candidates, w, xmid, ymid){
 
 	}
 
+	function setOrderingMap(){
+		orderingmap = getRankedIndices(candidates.map(x => x.index))
+	}
+
+	setOrderingMap();
+
 	drawCandSliders();
 }
 
 //maybe helpful http://bl.ocks.org/phil-pedruco/88cb8a51cdce45f13c7e
 //http://jsfiddle.net/NQDx9/1/
 function getGaussianLine(w, h, xcenter, ycenter){
-	w = width*w
+	w = rightwidth*w
 	h = height*h
-	xcenter = scaleX(xcenter)
+	xcenter = scaleRightX(xcenter)
 	ycenter = scaleY(ycenter)
 	 
 	let normal = function(mean, variance) {
@@ -895,9 +949,9 @@ function getGaussianLine(w, h, xcenter, ycenter){
 }
 
 function getUniformLine(w, h, xcenter, ycenter){
-	w = width*w
+	w = rightwidth*w
 	h = height*h
-	xcenter = scaleX(xcenter)
+	xcenter = scaleRightX(xcenter)
 	ycenter = scaleY(ycenter)
 	 
 
@@ -924,9 +978,9 @@ function getUniformLine(w, h, xcenter, ycenter){
 }
 
 function getLeftSkewLine(w, h, xcenter, ycenter){
-	w = width*w
+	w = rightwidth*w
 	h = height*h
-	xcenter = scaleX(xcenter)
+	xcenter = scaleRightX(xcenter)
 	ycenter = scaleY(ycenter)
 	 
 
@@ -954,9 +1008,9 @@ function getLeftSkewLine(w, h, xcenter, ycenter){
 }
 
 function getRightSkewLine(w, h, xcenter, ycenter){
-	w = width*w
+	w = rightwidth*w
 	h = height*h
-	xcenter = scaleX(xcenter)
+	xcenter = scaleRightX(xcenter)
 	ycenter = scaleY(ycenter)
 	 
 
@@ -984,9 +1038,9 @@ function getRightSkewLine(w, h, xcenter, ycenter){
 }
 
 function getBimodalGaussianLine(w, h, xcenter, ycenter){
-	w = width*w
+	w = rightwidth*w
 	h = height*h
-	xcenter = scaleX(xcenter)
+	xcenter = scaleRightX(xcenter)
 	ycenter = scaleY(ycenter)
 	 
 	let normal = function(mean, variance) {
@@ -1163,6 +1217,7 @@ simChoiceSelect.onchange = () => {
 	simdistrib = simChoiceSelect.value
 	drawSimulation()
 	clearGraph()
+
 	updateSimulationInit()
 }
 
@@ -1266,4 +1321,4 @@ prevButton.onclick = () => {
 }
 
 //for testing
-step = 9
+//step = 9
