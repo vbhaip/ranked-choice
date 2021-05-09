@@ -635,9 +635,16 @@ function simulate(candidates, size, rng=0.05, novote = 0.01){
 		if(simdistrib == "bimodgauss"){
 			sample_index = bimodGaussianRand();
 		}
-		if(simdistrib == "flat"){
+		if(simdistrib == "uniform"){
 			sample_index = Math.random();
 		}
+		if(simdistrib == "leftskew"){
+			sample_index = stdlib.base.random.beta(4,2)
+		}
+		if(simdistrib == "rightskew"){
+			sample_index = stdlib.base.random.beta(2,4)
+		}
+
 
 		let diff_indices = candidates.map(x => Math.abs(x.index - sample_index) + rng*2*Math.random())
 
@@ -792,7 +799,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 			.call(drag())
 			.on("contextmenu", (event, d) => {
 				if(candidates.length < 2){
-					console.log("yo")
+					//console.log("yo")
 					return;
 				}
 				event.preventDefault();
@@ -887,7 +894,7 @@ function getGaussianLine(w, h, xcenter, ycenter){
 	//	.attr("stroke", "red")
 }
 
-function getFlatLine(w, h, xcenter, ycenter){
+function getUniformLine(w, h, xcenter, ycenter){
 	w = width*w
 	h = height*h
 	xcenter = scaleX(xcenter)
@@ -914,6 +921,66 @@ function getFlatLine(w, h, xcenter, ycenter){
 	//d3.select("#viz").append('path').datum(combinedSeries)
 	//	.attr('d', line)
 	//	.attr("stroke", "red")
+}
+
+function getLeftSkewLine(w, h, xcenter, ycenter){
+	w = width*w
+	h = height*h
+	xcenter = scaleX(xcenter)
+	ycenter = scaleY(ycenter)
+	 
+
+	let xseries = [];
+	xseries.push(-0.5)
+	for (var i = 0; i <= 1000; i++) { xseries.push((i*1.0/1000-0.5)); }
+	xseries.push(0.5)
+
+
+	let yseries = xseries.map(d => stdlib.base.dists.beta.pdf(d+0.5, 4, 2));
+	//console.log(yseries)
+	let max = Math.max(...yseries)
+	yseries = yseries.map(d => d/max + 0.1)
+
+	yseries[0] = 0.1
+	yseries[1002] = 0.1
+
+	let combinedSeries = d3.zip(xseries, yseries);
+
+	let line = d3.line()
+		.x(d => d[0]*w+(xcenter))
+		.y(d => (1-d[1])*(h)+(ycenter))
+
+	return [line, combinedSeries]
+}
+
+function getRightSkewLine(w, h, xcenter, ycenter){
+	w = width*w
+	h = height*h
+	xcenter = scaleX(xcenter)
+	ycenter = scaleY(ycenter)
+	 
+
+	let xseries = [];
+	xseries.push(-0.5)
+	for (var i = 0; i <= 1000; i++) { xseries.push((i*1.0/1000-0.5)); }
+	xseries.push(0.5)
+
+
+	let yseries = xseries.map(d => stdlib.base.dists.beta.pdf(d+0.5, 2, 4));
+	//console.log(yseries)
+	let max = Math.max(...yseries)
+	yseries = yseries.map(d => d/max + 0.1)
+
+	yseries[0] = 0.1
+	yseries[1002] = 0.1
+
+	let combinedSeries = d3.zip(xseries, yseries);
+
+	let line = d3.line()
+		.x(d => d[0]*w+(xcenter))
+		.y(d => (1-d[1])*(h)+(ycenter))
+
+	return [line, combinedSeries]
 }
 
 function getBimodalGaussianLine(w, h, xcenter, ycenter){
@@ -970,9 +1037,14 @@ function drawSimulation(){
 	if(simdistrib == "bimodgauss"){
 		[simline, series] = getBimodalGaussianLine(0.5, 0.25, 0.5, 0.1)
 	}
-	if(simdistrib == "flat"){
-		[simline, series] = getFlatLine(0.5, 0.25, 0.5, 0.1)
-		console.log("yo")
+	if(simdistrib == "uniform"){
+		[simline, series] = getUniformLine(0.5, 0.25, 0.5, 0.1)
+	}
+	if(simdistrib == "leftskew"){
+		[simline, series] = getLeftSkewLine(0.5, 0.25, 0.5, 0.1)
+	}
+	if(simdistrib == "rightskew"){
+		[simline, series] = getRightSkewLine(0.5, 0.25, 0.5, 0.1)
 	}
 
 	drawCandidates(candidates, 0.5, 0.5, 0.35)
@@ -1076,7 +1148,7 @@ simRankedButton.onclick = () => {
 				simFPTPButton.disabled = false;
 			}
 			runRound(simulationBallots, i, candidates.length + 1, 0.5, newlegend, show_winner=showresult)
-		}, 3000*(i-0.5))
+		}, 3000*(i-1))
 
 	}
 	resetButton.disabled = false;
