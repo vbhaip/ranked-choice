@@ -126,7 +126,7 @@ var tooltip = d3.select("body")
 	.attr('id', 'tooltip')
 	.attr('style', 'position: absolute; opacity: 0;')
 
-var candidateTooltip;
+var simdistrib = "gauss"
 
 
 function ticked() {
@@ -360,7 +360,12 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 			//d.votes.forEach((vote,i) => {
 			//	text += "Choice " + (i+1) + ": " + vote + "\n";
 			//});
-			text += d.votes
+			if(d.votes[d.votes.length - 1] == 'X'){
+				text += d.votes.slice(0, d.votes.length - 1)
+			}
+			else{
+				text += d.votes
+			}
 			d.text = text
 		})
 
@@ -716,27 +721,32 @@ function drawCandidates(candidates, w, xmid, ymid){
 
 	}
 
-	svg.append("rect")
-		.attr("x", xstart)
-		.attr("y", scaleY(ymid-0.02))
-		.attr("width", scaledw)
-		.attr("height", scaleY(0.04))
-		.attr("fill","grey")
-		.attr("opacity","0.2")
-		.on("click", (event,d) => {
-			//console.log(event)
-			if(candidates.length < 8){
-				let ind = (event.x-xstart)/scaledw
-				candidates.push({
-					index: ind,
-					id: candidates.length,
-					x: ind*scaledw+xstart,
-					y: scaleY(ymid)
-				})
-				updateSimulationInit();
-				drawCandSliders()
-			}
-		})
+	let rectDrawn = svg.select("#rectslider").node() 
+
+	if(!rectDrawn){
+		svg.append("rect")
+			.attr("x", xstart)
+			.attr("y", scaleY(ymid-0.02))
+			.attr("width", scaledw)
+			.attr("height", scaleY(0.04))
+			.attr("fill","grey")
+			.attr("opacity","0.2")
+			.on("click", (event,d) => {
+				//console.log(event)
+				if(candidates.length < 8){
+					let ind = (event.x-xstart)/scaledw
+					candidates.push({
+						index: ind,
+						id: candidates.length,
+						x: ind*scaledw+xstart,
+						y: scaleY(ymid)
+					})
+					updateSimulationInit();
+					drawCandSliders()
+				}
+			})
+			.attr("id", "rectslider")
+	}
 
 	//console.log(candidates)
 	function drawCandSliders(){
@@ -780,7 +790,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 					.transition()
 					.duration(80)
 					.style('opacity', 1)
-					.text(d.id)
+					.text(newlegend['' + d.id])
 					.style('left', (event.pageX+15) + 'px')
 					.style('top', (event.pageY-15) + 'px')
 			})
@@ -834,16 +844,60 @@ function getGaussianLine(w, h, xcenter, ycenter){
 	//	.attr("stroke", "red")
 }
 
+function getFlatLine(w, h, xcenter, ycenter){
+	w = width*w
+	h = height*h
+	xcenter = scaleX(xcenter)
+	ycenter = scaleY(ycenter)
+	 
+
+	let xseries = [];
+	for (var i = 0; i <= 1000; i++) { xseries.push((i*1.0/1000-0.5)); }
+
+	let yseries = []
+	for (var i = 0; i <= 1000; i++) { yseries.push(0.5); }
+	yseries[0] = 0.1
+	yseries[1000] = 0.1
+
+	let combinedSeries = d3.zip(xseries, yseries);
+
+	//console.log(combinedSeries)
+	let line = d3.line()
+		.x(d => d[0]*w+(xcenter))
+		.y(d => (1-d[1])*(h)+(ycenter))
+
+	return [line, combinedSeries]
+	//d3.select("#viz").append('path').datum(combinedSeries)
+	//	.attr('d', line)
+	//	.attr("stroke", "red")
+}
+
+
 function drawSimulation(){
-	let [gaussline, series] = getGaussianLine(0.5, 0.25, 0.5, 0.1)
+	let simline, series;
+
+	if(simdistrib == "gauss"){
+		[simline, series] = getGaussianLine(0.5, 0.25, 0.5, 0.1)
+	}
+	if(simdistrib == "flat"){
+		[simline, series] = getFlatLine(0.5, 0.25, 0.5, 0.1)
+		console.log("yo")
+	}
+
 	drawCandidates(candidates, 0.5, 0.5, 0.35)
 
-	//console.log(gaussline)
-	svg.append('path')
+	//console.log(simline)
+	let distribpath= svg.select("#simline").node() 
+		? svg.select("#simline") 
+		: svg.append("path")
+
+	distribpath
 		.datum(series)
-		.attr('d', gaussline)
+		.transition()
+		.duration(2000)
+		.attr('d', simline)
 		.attr("fill", "url(#redbluegrad")
-		.attr("id", "gaussline")
+		.attr("id", "simline")
 
 }
 
@@ -856,17 +910,54 @@ let simFPTPButton = document.getElementById("simfptp")
 let simRankedButton = document.getElementById("simranked")
 let resetButton= document.getElementById("reset")
 
+//let parties = [
+//	"Industrial Party",
+//	"Peace Party",
+//	"Civic Party",
+//	"Agrarian Party",
+//	"Freedom Party",
+//	"Tech Party",
+//	"Patriot Party",
+//	"Justice Party",
+//	"Science Party",
+
+let parties = [
+	"Spider-Man",
+	"Iron Man",
+	"Thor",
+	"Hulk",
+	"Wanda",
+	"Thanos",
+	"Loki",
+	"Hawkeye",
+	"Groot",
+	"Nick Fury",
+	"Starlord",
+	"Deadpool",
+	"Dr. Strange",
+	"Vision",
+	"Falcon",
+	"Gamora",
+	"Antman",
+	"Wolverine"]
+
+//https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+parties = parties 
+  .map((a) => ({sort: Math.random(), value: a}))
+  .sort((a, b) => a.sort - b.sort)
+  .map((a) => a.value)
+
 
 let newlegend = {
-	'0': 'Name 0',
-	'1': 'Name 1',
-	'2': 'Name 2',
-	'3': 'Name 3',
-	'4': 'Name 4',
-	'5': 'Name 5',
-	'6': 'Name 6',
-	'7': 'Name 7',
-	'8': 'Name 8',
+	'0': parties[0],
+	'1': parties[1],
+	'2': parties[2],
+	'3': parties[3],
+	'4': parties[4],
+	'5': parties[5],
+	'6': parties[6],
+	'7': parties[7],
+	'8': parties[8],
 	'X': 'No vote'
 }
 
