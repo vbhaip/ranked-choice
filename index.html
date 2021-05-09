@@ -3,7 +3,78 @@
 <meta charset="UTF-8">
 <html>
 <style>
-	@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap');
+	@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400&display=swap');
+
+	html {
+		font-family: 'Roboto';
+		background: #f8f8ff;
+	}
+
+
+	#tooltip {
+		background: white;
+		border-radius: 3px;
+		/*
+		width: 10vw;
+		height: 10vw;
+		*/
+		padding: 1vw;
+		filter: drop-shadow(0 0.4rem 0.4rem rgba(0, 0, 0, 0.2));
+	}
+
+	.navbutton {
+		background: white;
+		filter: drop-shadow(0 0.4rem 0.4rem rgba(0, 0, 0, 0.2));
+		font-family: 'Roboto';
+		border-radius: 5px;
+
+		border: 2px solid #A974D4;
+		color: #A974D4;
+
+		outline: none;
+		width: 6vw;
+		height: 3vw;
+		font-size: 1.2vw;
+
+		transition: 0.3s;
+	}
+
+	.navbutton:hover{
+		background: #A974D4;
+		color: white;
+	}
+
+	.simbutton {
+		background: white;
+		filter: drop-shadow(0 0.4rem 0.4rem rgba(0, 0, 0, 0.2));
+		font-family: 'Roboto';
+		border-radius: 5px;
+
+		border: 2px solid #2F2D2E;
+		color: #2F2D2E;
+
+		outline: none;
+		width: 15vw;
+		height: 5vw;
+		font-size: 1.2vw;
+
+		transition: 0.3s;
+	}
+
+	.simbutton:hover{
+		background: #2F2D2E;
+		color: white;
+	}
+
+	.simbutton:disabled {
+		background: white;
+		color: #2F2D2E;
+		opacity: 0.1
+
+
+	}
+
+
 </style>
 	<head>
 		<title>Ranked Choice Vis</title>
@@ -23,12 +94,12 @@
 			  </defs>
 			</svg>
 			<br>
-			<button id="simfptp" >Simulate FPTP</button>
-			<button id="simranked">Simulate Ranked Choice</button>
-			<button id="reset">Reset Simulation</button>
+			<button class="simbutton" id="simfptp" >Simulate FPTP</button>
+			<button class="simbutton" id="simranked">Simulate Ranked Choice</button>
+			<button class="simbutton" id="reset">Reset Simulation</button>
 		<p id="description">Voting systems</p>
-			<button id="prev" >Previous</button>
-			<button id="next">Next</button>
+			<button class="navbutton" id="prev" >Previous</button>
+			<button class="navbutton" id="next">Next</button>
 		</div>
 		<script src="index.js"></script>
 	</body>

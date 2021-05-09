@@ -121,6 +121,14 @@ var scaleColor = d3.schemeDark2;
 var currentForces = []
 
 
+var tooltip = d3.select("body")
+	.append("div")
+	.attr('id', 'tooltip')
+	.attr('style', 'position: absolute; opacity: 0;')
+
+var candidateTooltip;
+
+
 function ticked() {
 
 	circle
@@ -150,23 +158,23 @@ function colorizeDots(data, maine=false) {
 		if(maine){
 			switch(d.votes[0]){
 				case '0':
-					return 'red'
+					return '#b7245c'
 					break;
 				case '1':
-					return 'blue'
+					return '#4361EE'
 					break;
 				case '2':
-					return 'green'
+					return '#4A7C59'
 					break;
 				case '3':
-					return 'orange'
+					return '#EF8354'
 					break;
 
 			}
 		}
 
 		if(d.votes[0] == "X"){
-			return "black";
+			return "#2F2D2E";
 		}
 
 		return scaleColor[parseInt(d.votes[0])];
@@ -189,6 +197,19 @@ function renderGraph(data) {
 	.attr("cx", function(d) { return scaleX(d.x)} )
 	.attr("cy", function(d) { return scaleY(d.y)} )
 	.attr("r", function(d) { return 4} )
+	.on('mouseover', function(event, d) {
+		tooltip
+			.transition()
+			.duration(80)
+			.style('opacity', 1)
+			.text(d.text)
+			.style('left', (event.pageX+15) + 'px')
+			.style('top', (event.pageY-15) + 'px')
+	})
+	.on('mouseout', function(e) {
+		tooltip
+			.style('opacity', 0)
+	})
 
 	//const NUM_ITERATIONS = 1000;
 	//force.tick(NUM_ITERATIONS);
@@ -332,6 +353,16 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 		//console.log(currMaj)
 
 		metadata.currMaj.push(currMaj)
+
+		data.forEach( (d, i) => {
+			//let text = "Voter " + i + " ballot: " +  "\n";
+			let text = "Voter " + i + " ballot: ";
+			//d.votes.forEach((vote,i) => {
+			//	text += "Choice " + (i+1) + ": " + vote + "\n";
+			//});
+			text += d.votes
+			d.text = text
+		})
 
 		//console.log(eliminated)
 	}
@@ -744,6 +775,20 @@ function drawCandidates(candidates, w, xmid, ymid){
 			})
 			.attr("fill", (d,i) => scaleColor[i])
 			.attr("stroke", "black")
+			.on('mouseover', function(event, d) {
+				tooltip
+					.transition()
+					.duration(80)
+					.style('opacity', 1)
+					.text(d.id)
+					.style('left', (event.pageX+15) + 'px')
+					.style('top', (event.pageY-15) + 'px')
+			})
+			.on('mouseout', function(e) {
+				tooltip
+					.style('opacity', 0)
+			})
+
 	}
 
 	drawCandSliders();
