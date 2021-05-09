@@ -12,6 +12,7 @@
 
 
 	#tooltip {
+		white-space: pre-wrap;
 		background: white;
 		border-radius: 3px;
 		/*
@@ -74,6 +75,17 @@
 
 	}
 
+	select {
+		background: white;
+		color: #2F2D2E;
+		font-family: 'Roboto';
+		outline: none;
+
+		border: 2px solid #2F2D2E;
+		border-radius: 3px;
+		filter: drop-shadow(0 0.4rem 0.4rem rgba(0, 0, 0, 0.2));
+	}
+
 
 </style>
 	<head>
@@ -97,6 +109,13 @@
 			<button class="simbutton" id="simfptp" >Simulate FPTP</button>
 			<button class="simbutton" id="simranked">Simulate Ranked Choice</button>
 			<button class="simbutton" id="reset">Reset Simulation</button>
+			<br>
+			<select name="simchoice" id="simchoice">
+				<option value="gauss">Gaussian</option>
+				<option value="bimodgauss">Bimodal Gaussian</option>
+				<option value="flat">Flatline</option>
+			</select>
+			<br>
 		<p id="description">Voting systems</p>
 			<button class="navbutton" id="prev" >Previous</button>
 			<button class="navbutton" id="next">Next</button>

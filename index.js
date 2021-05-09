@@ -201,14 +201,19 @@ function renderGraph(data) {
 		tooltip
 			.transition()
 			.duration(80)
+			.style('display', 'block')
 			.style('opacity', 1)
 			.text(d.text)
 			.style('left', (event.pageX+15) + 'px')
 			.style('top', (event.pageY-15) + 'px')
+			.transition()
+			.duration(3000)
+			.style('opacity', 0)
 	})
 	.on('mouseout', function(e) {
 		tooltip
 			.style('opacity', 0)
+			.style('display', 'none')
 	})
 
 	//const NUM_ITERATIONS = 1000;
@@ -266,7 +271,7 @@ function generateForce(data, xcenter, ycenter){
 
 }
 
-function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{index: 2},{index: 3}]){
+function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{index: 2},{index: 3}], maine=true){
 	//data comes in as each item having a votes element
 	//first add an array to each item for the value for each round
 	//this should group all of the elements based off the first value
@@ -356,16 +361,23 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 
 		data.forEach( (d, i) => {
 			//let text = "Voter " + i + " ballot: " +  "\n";
-			let text = "Voter " + i + " ballot: ";
-			//d.votes.forEach((vote,i) => {
-			//	text += "Choice " + (i+1) + ": " + vote + "\n";
-			//});
-			if(d.votes[d.votes.length - 1] == 'X'){
-				text += d.votes.slice(0, d.votes.length - 1)
-			}
-			else{
-				text += d.votes
-			}
+			let text = "Voter " + i + " ballot: \n";
+			d.votes.forEach((vote,i) => {
+				if(vote != "X"){
+					if(maine){
+						text += (i+1) + ". " + legend[vote] + "\n";
+					}
+					else{
+						text += (i+1) + ". " + newlegend[vote] + "\n";
+					}
+				}
+			});
+			//if(d.votes[d.votes.length - 1] == 'X'){
+			//	text += d.votes.slice(0, d.votes.length - 1)
+			//}
+			//else{
+			//	text += d.votes
+			//}
 			d.text = text
 		})
 
@@ -574,6 +586,17 @@ function gaussianRand() {
   return rand / 6;
 }
 
+//not sure if this is right, double check
+function bimodGaussianRand() {
+	if(Math.random() < 0.5){
+		return gaussianRand()*0.6
+	}
+	else{
+		return 0.4+gaussianRand()*0.6
+	}
+}
+
+
 //https://stackoverflow.com/questions/3730510/javascript-sort-array-and-return-an-array-of-indicies-that-indicates-the-positi
 function getRankedIndices(arr) {
 
@@ -593,12 +616,11 @@ function shuffleArray(array, start) {
     }
 }
 
-//type: distribution curve
 //candidates: array with dictionaries. each dictionary contains index: [0,1] value on political spectrum, id: unique identifier
 //size: number of people in election
 //rng: how much randomness to add to people's votes
 //return: array - ballots
-function simulate(type, candidates, size, rng=0.05, novote = 0.01){
+function simulate(candidates, size, rng=0.05, novote = 0.01){
 	//createBallots() - sample from distribution curve - for each sample order the candidates
 	// - have taper off effect - if someone is so far from a candidate then make it a probability of whether or not they leave the ballot blank
 	
@@ -606,7 +628,16 @@ function simulate(type, candidates, size, rng=0.05, novote = 0.01){
 
 
 	for(let i = 0; i < size; i++){
-		let sample_index = gaussianRand();
+		let sample_index;
+		if(simdistrib == "gauss"){
+			sample_index = gaussianRand();
+		}
+		if(simdistrib == "bimodgauss"){
+			sample_index = bimodGaussianRand();
+		}
+		if(simdistrib == "flat"){
+			sample_index = Math.random();
+		}
 
 		let diff_indices = candidates.map(x => Math.abs(x.index - sample_index) + rng*2*Math.random())
 
@@ -652,9 +683,9 @@ let simulationBallots;
 
 function updateSimulationInit() {
 
-	simulationBallots = simulate("", candidates, 200)
+	simulationBallots = simulate(candidates, 200)
 	colorizeDots(simulationBallots)
-	meta = initializeElectionData(simulationBallots, candidates)
+	meta = initializeElectionData(simulationBallots, candidates, false)
 	simulationBallots.meta = meta
 	runRound(simulationBallots, 0, 2, 0.5, legend)
 
@@ -662,7 +693,7 @@ function updateSimulationInit() {
 
 
 
-//let ballots = simulate("", candidates, 20)
+//let ballots = simulate(candidates, 20)
 //renderGraph(ballots)
 //runRound(ballots, 0, 5, 0.2, legend)
 
@@ -730,7 +761,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 			.attr("width", scaledw)
 			.attr("height", scaleY(0.04))
 			.attr("fill","grey")
-			.attr("opacity","0.2")
+			.attr("opacity","0.1")
 			.on("click", (event,d) => {
 				//console.log(event)
 				if(candidates.length < 8){
@@ -789,14 +820,19 @@ function drawCandidates(candidates, w, xmid, ymid){
 				tooltip
 					.transition()
 					.duration(80)
+					.style('display', 'block')
 					.style('opacity', 1)
 					.text(newlegend['' + d.id])
 					.style('left', (event.pageX+15) + 'px')
 					.style('top', (event.pageY-15) + 'px')
+					.transition()
+					.duration(2500)
+					.style('opacity', 0)
 			})
 			.on('mouseout', function(e) {
 				tooltip
 					.style('opacity', 0)
+					.style('display', 'none')
 			})
 
 	}
@@ -824,18 +860,25 @@ function getGaussianLine(w, h, xcenter, ycenter){
 	}
 
 	let xseries = [];
+	xseries.push(-0.5)
 	for (var i = 0; i <= 1000; i++) { xseries.push((i*1.0/1000-0.5)); }
+	xseries.push(0.5)
 
 	let normalTransform = normal(0, .5/8)
 	let yseries = xseries.map(d => normalTransform(d));
 	let max = Math.max(...yseries)
 	yseries = yseries.map(d => d/max)
+
+	yseries[0] = 0.1
+	yseries[1002] = 0.1
+
+
 	//console.log(yseries)
 	let combinedSeries = d3.zip(xseries, yseries);
 
 	//console.log(combinedSeries)
 	let line = d3.line()
-		.x(d => d[0]*w+(xcenter))
+		.x(d => (d[0])*w+(xcenter))
 		.y(d => (1-d[1])*(h)+(ycenter))
 
 	return [line, combinedSeries]
@@ -852,12 +895,13 @@ function getFlatLine(w, h, xcenter, ycenter){
 	 
 
 	let xseries = [];
+	xseries.push(-0.5)
 	for (var i = 0; i <= 1000; i++) { xseries.push((i*1.0/1000-0.5)); }
+	xseries.push(0.5)
 
-	let yseries = []
-	for (var i = 0; i <= 1000; i++) { yseries.push(0.5); }
+	let yseries = xseries.map(d => 0.5);
 	yseries[0] = 0.1
-	yseries[1000] = 0.1
+	yseries[1002] = 0.1
 
 	let combinedSeries = d3.zip(xseries, yseries);
 
@@ -872,12 +916,59 @@ function getFlatLine(w, h, xcenter, ycenter){
 	//	.attr("stroke", "red")
 }
 
+function getBimodalGaussianLine(w, h, xcenter, ycenter){
+	w = width*w
+	h = height*h
+	xcenter = scaleX(xcenter)
+	ycenter = scaleY(ycenter)
+	 
+	let normal = function(mean, variance) {
+		// Precompute portion of the function that does not depend on x
+		let predicate = 1 / Math.sqrt(variance * 2 * Math.PI);
+
+		//console.log(predicate)
+		return function(x) {
+			// See the pdf function from http://en.wikipedia.org/wiki/Normal_distribution
+			return predicate * Math.exp( -Math.pow(x - mean, 2) / (2 * variance));
+		};
+	}
+
+	let xseries = [];
+	xseries.push(-0.5)
+	for (var i = 0; i <= 1000; i++) { xseries.push((i*1.0/1000-0.5)); }
+	xseries.push(0.5)
+
+	let normalTransform1 = normal(-.25, .25/8)
+	let normalTransform2 = normal(.25, .25/8)
+
+	let yseries = xseries.map(d => normalTransform1(d) + normalTransform2(d) - 0.65);
+	let max = Math.max(...yseries)
+	yseries = yseries.map(d => d/max)
+
+	yseries[0] = 0.1
+	yseries[1002] = 0.1
+	//console.log(yseries)
+	let combinedSeries = d3.zip(xseries, yseries);
+
+	//console.log(combinedSeries)
+	let line = d3.line()
+		.x(d => d[0]*w+(xcenter))
+		.y(d => (1-d[1])*(h)+(ycenter))
+
+	return [line, combinedSeries]
+	//d3.select("#viz").append('path').datum(combinedSeries)
+	//	.attr('d', line)
+	//	.attr("stroke", "red")
+}
 
 function drawSimulation(){
 	let simline, series;
 
 	if(simdistrib == "gauss"){
 		[simline, series] = getGaussianLine(0.5, 0.25, 0.5, 0.1)
+	}
+	if(simdistrib == "bimodgauss"){
+		[simline, series] = getBimodalGaussianLine(0.5, 0.25, 0.5, 0.1)
 	}
 	if(simdistrib == "flat"){
 		[simline, series] = getFlatLine(0.5, 0.25, 0.5, 0.1)
@@ -894,7 +985,7 @@ function drawSimulation(){
 	distribpath
 		.datum(series)
 		.transition()
-		.duration(2000)
+		.duration(1000)
 		.attr('d', simline)
 		.attr("fill", "url(#redbluegrad")
 		.attr("id", "simline")
@@ -909,6 +1000,8 @@ let description = document.getElementById("description")
 let simFPTPButton = document.getElementById("simfptp")
 let simRankedButton = document.getElementById("simranked")
 let resetButton= document.getElementById("reset")
+
+let simChoiceSelect = document.getElementById("simchoice")
 
 //let parties = [
 //	"Industrial Party",
@@ -965,6 +1058,7 @@ let newlegend = {
 simFPTPButton.hidden = true
 simRankedButton.hidden = true
 resetButton.hidden = true
+simChoiceSelect.hidden = true
 
 simFPTPButton.onclick = () => {
 	runRound(simulationBallots, 1, candidates.length + 1, 0.5, newlegend, show_winners=true, fptp=true)
@@ -991,9 +1085,14 @@ simRankedButton.onclick = () => {
 resetButton.onclick = () => {
 	clearGraph()
 	resetButton.disabled = true;
-
 }
 
+simChoiceSelect.onchange = () => {
+	simdistrib = simChoiceSelect.value
+	drawSimulation()
+	clearGraph()
+	updateSimulationInit()
+}
 
 descriptions = [
 "What's the difference between ranked choice voting and the current voting system we use right now?",
@@ -1064,11 +1163,14 @@ let update = ()=> {
 			simFPTPButton.hidden = false 
 			simRankedButton.hidden = false 
 			resetButton.hidden = false 
+			simChoiceSelect.hidden = false
+
+
 			resetButton.disabled= true 
 
 			break;
 		case 11:
-			//ballots = simulate("", candidates, 200)
+			//ballots = simulate(candidates, 200)
 			//colorizeDots(ballots)
 			//meta = initializeElectionData(ballots, candidates)
 			//ballots.meta = meta
@@ -1091,3 +1193,5 @@ prevButton.onclick = () => {
 	update()
 }
 
+//for testing
+step = 9
