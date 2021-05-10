@@ -509,8 +509,11 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			return ""
 		})
 		.attr("text-decoration", (d,i) => {
+			if(i == all_subset_dots.length - 1){
+				return ""
+			}
 
-			if(d.length == 0){
+			if(all_subset_dots[orderingmap[i]].length == 0){
 				return "line-through"
 			}
 		})
@@ -523,13 +526,23 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		.data(all_subset_dots)
 		.join("text")
 		.attr("class", "cluster-number")
-		.attr("id", "cluster-number-" + i)
-		.text((d) => "Count: " + d.length)
-		.attr("x", (d,i) => {
-			if(i == all_subset_dots.length - 1){
-				return scaleX(x_locs[all_subset_dots.length - 1])
+		.attr("id", (d,i) => "cluster-number-" + i)
+		.text((d,i) => {
+			let toreturn = "Count: "
+			if(i == all_subset_dots.length-1){
+				toreturn += all_subset_dots[i].length
 			}
-			return scaleX(x_locs[orderingmap.indexOf(i)])
+			else{
+				toreturn += all_subset_dots[orderingmap[i]].length
+			}
+			return toreturn
+		})
+		.attr("x", (d,i) => {
+			return scaleX(x_locs[i])
+			//if(i == all_subset_dots.length - 1){
+			//	return scaleX(x_locs[all_subset_dots.length - 1])
+			//}
+			//return scaleX(x_locs[orderingmap[i]])
 		})
 		.attr("y", scaleY(newy+0.25))
 		.attr("text-anchor", "middle")
@@ -538,10 +551,15 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		.transition()
 		.duration(500)
 		.style("opacity", (d,i) => {
+			//console.log(i)
+			//console.log(d)
+			//console.log()
+			//console.log(all_subset_dots)
 			if(show_winner && i == all_subset_dots.length - 1){
 				return 0.1
 			}
 			if(show_winner && all_subset_dots[orderingmap[i]].length != maxsize){
+				//console.log("---" + i + "---")
 				return 0.1
 			}
 			return 1
@@ -550,10 +568,16 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		.transition()
 		.duration(500)
 		.style("opacity", (d,i) => {
+			//console.log(i)
+			//console.log(d)
+			//console.log()
+			//console.log(all_subset_dots)
 			if(show_winner && i == all_subset_dots.length - 1){
 				return 0.1
 			}
+			//code below buggy?
 			if(show_winner && all_subset_dots[orderingmap[i]].length != maxsize){
+				//console.log("..." + i + "...")
 				return 0.1
 			}
 			return 1
