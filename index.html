@@ -13,19 +13,26 @@
 		overflow: hidden;
 	}
 
+	#simcontrol {
+		display: flex;
+		justify-content: center;
+
+	}
+
+
 	#jumpahead{
 		width: 20vw;
 		margin-left: auto;
 		margin-right: auto;
 		text-align: center;
-		margin-top: -0.5vmax;
+		margin-top: 0vmax;
 		height: 2vmax;
 		display: block;
 		font-size: 0.8vmax;
 	}
 
 	a{
-		color: purple;
+		color: #A974D4
 
 	}
 
@@ -61,8 +68,9 @@
 		margin-right: auto;
 		text-align: center;
 		margin-bottom: 3vw;
-		margin-top: -1.5vmax;
+		margin-top: -0.0vmax;
 		height: 4vmax;
+		font-size: 1.2vw;
 	}
 
 	#nav {
@@ -78,7 +86,7 @@
 		width: 80vw;
 		height: 8vw;
 		margin: 10vw;
-		margin-top: 0vmax;
+		margin-top: 2vmax;
 		padding: 0;
 		display: block;
 
@@ -108,7 +116,7 @@
 		color: #A974D4;
 
 		outline: none;
-		width: 6vw;
+		width: 7vw;
 		height: 3vw;
 		font-size: 1.2vw;
 
@@ -137,11 +145,12 @@
 		color: #2F2D2E;
 
 		outline: none;
-		width: 10vw;
+		width: 11vw;
 		height: 3vw;
-		font-size: 1.1vw;
+		font-size: 1vw;
+		font-weight: bold;
 
-		margin: 1vw;
+		margin: 0.5vw;
 
 		transition: 0.3s;
 	}
@@ -165,7 +174,7 @@
 		font-family: 'Noto Sans JP';
 		outline: none;
 
-		width: 10vw;
+		width: 11vw;
 		height: 3vw;
 
 		border: 2px solid #2F2D2E;
@@ -194,9 +203,9 @@
 			  </defs>
 			</svg>
 			<div id="simcontrol">
-				<button class="simbutton" id="simfptp" >Simulate FPTP</button>
-				<button class="simbutton" id="simranked">Simulate RCV</button>
-				<button class="simbutton" id="reset">Reset Simulation</button>
+				<button hidden class="simbutton" id="simfptp" >Simulate FPTP</button>
+				<button hidden class="simbutton" id="simranked">Simulate RCV</button>
+				<button hidden class="simbutton" id="reset">Reset Simulation</button>
 			</div>
 			<div id="simchoicecontainer">
 				Distribution of voter ideologies:  
@@ -213,7 +222,7 @@
 			</div>
 			<br/>
 			<div id="bottombar">
-				<p id="description">Voting systems</p>
+				<p id="description"></p>
 				<br/>
 				<div id="nav">
 					<button class="navbutton" id="prev" >Previous</button>

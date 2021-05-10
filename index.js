@@ -109,7 +109,8 @@ var circle;
 var width = window.innerWidth;
 var leftwidth = window.innerWidth*.63;
 var rightwidth = width - leftwidth;
-var height = 500;
+//var height = 500;
+var height = width*.35
 
 var svg = d3.select("#viz")
 	.attr("width", width)
@@ -536,6 +537,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		.attr("x", (d,i) => maine ? scaleX(x_locs[i]) : scaleLeftX(x_locs[i]))
 		.attr("y", scaleY(newy+0.2))
 		.attr("text-anchor", "middle")
+		.attr("font-size", "1vw")
 
 	svg.selectAll(".cluster-number")
 		.data(all_subset_dots)
@@ -561,6 +563,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		})
 		.attr("y", scaleY(newy+0.25))
 		.attr("text-anchor", "middle")
+		.attr("font-size", "1vw")
 
 	svg.selectAll(".cluster-label")
 		.transition()
@@ -644,7 +647,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			.attr("x", maine ? scaleX(0.5) : scaleLeftX(0.5))
 			.attr("y", scaleY(newy - 0.35))
 			.attr("text-anchor", "middle")
-			.attr("font-size", "15px")
+			.attr("font-size", "0.9vw")
 			.attr("class", "toptext")
 			//.style("outline", "1px solid black")
 			.attr("text-decoration", "underline")
@@ -668,7 +671,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 
 		//tells us if we're on our final round
 		let finalround = (ranknum+1 == data.meta.rounds);
-		console.log(finalround)
+		//console.log(finalround)
 		if(ranknum > 0){
 			if(finalround){
 				if(data.meta.rankedWinner == data.meta.fptpWinner){
@@ -692,7 +695,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			}
 			else{
 				boxedtext
-					.text("Voters pick their top choice candidates. The results are the same as before, but candidates need >50% of votes to win.")
+					.text("Voters pick their top choice candidates. The results are the same as First Past the Post so far, but candidates need >50% of votes to win, so no winner is chosen yet.")
 			}
 		}
 
@@ -863,12 +866,16 @@ function drawCandidates(candidates, w, xmid, ymid){
 			.clamp(true)
 
 		function dragstarted(event, d) {
-			d3.select(this).raise().attr("stroke", null).attr("r", 10);
+			d3.select(this).raise()
+				.attr("stroke", null)
+				.attr("r", 10)
+				.style("cursor", "grabbing");
 		}
 
 		function dragged(event, d) {
 			//console.log(event.x)
-			d3.select(this).attr("cx", d.x = dragXScale(event.x));
+			d3.select(this)
+				.attr("cx", d.x = dragXScale(event.x))
 			//console.log(d.x)
 			//console.log(d.index)
 			//console.log()
@@ -876,7 +883,10 @@ function drawCandidates(candidates, w, xmid, ymid){
 		}
 
 		function dragended(event, d) {
-			d3.select(this).attr("stroke", "black").attr("r", 6);
+			d3.select(this)
+				.attr("stroke", "black")
+				.attr("r", 6)
+				.style("cursor", "grab")
 			updateSimulationInit();
 			setOrderingMap()
 		}
@@ -914,6 +924,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 				}
 			})
 			.attr("id", "rectslider")
+			.style("cursor", "copy")
 	}
 
 	//console.log(candidates)
@@ -976,6 +987,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 					.style('opacity', 0)
 					.style('display', 'none')
 			})
+			.style("cursor", "grab")
 
 	}
 
@@ -1182,7 +1194,7 @@ function drawSimulationInit(){
 
 	d3.select("#simchoicecontainer")
 		.style("position", "absolute")
-		.style("left", scaleRightX(0.2) + "px")
+		.style("left", scaleRightX(0.115) + "px")
 		.style("top", scaleY(0.7) + "px")
 		.style("display", "inline")
 
@@ -1199,14 +1211,14 @@ function drawSimulationInit(){
 		.style("font-size", "1.5vw")
 
 	d3.select("#simhelp")
+		.style("display", "block")
+		.style("left", scaleRightX(0.13) + "px")
+		.style("top", scaleY(1.2) + "px")
 		.style("opacity", 0)
 		.transition()
 		.delay(5000)
 		.transition()
 		.duration(1000)
-		.style("left", scaleRightX(0.13) + "px")
-		.style("top", scaleY(1.2) + "px")
-		.style("display", "block")
 		.style("opacity", 1)
 
 }
@@ -1365,9 +1377,9 @@ let descriptions = [
 "Maine is one of few states that use Ranked Choice Voting. Let's look at Maine's 2018 2nd Congressional Election to see the differences between what we currently use&mdash;First Past the Post (FPTP)&mdash;and Ranked Choice Voting (RCV). Here \
 each dot represents ~2,000 votes.",
 "We can color each dot based off who each person voted for.",
-"Let's split it up so it's easier to see. We've simulated what you're used to seeing in an election. Here Brian Poliquin has won using FPTP. (You may notice a 'No vote' choice on the right&mdash;this means that voters left the ballot blank or didn't fill it out correctly).",
+"Let's split it up so it's easier to see. We've simulated what you're used to seeing in an election. Here Brian Poliquin has won using FPTP. (You may spot a 'No vote' choice on the right&mdash;this means that voters left the ballot blank or didn't fill it out correctly).",
 "But notice out of the 144 total votes, only 67 went to him (46.5%). The problem with FPTP is that it only requires a plurality of the votes.\
- This means that candidates may win even if a majority of the population doesn't support them.",
+ This means that a candidate may win even if a majority of the population doesn't support them.",
 "Let's redo this election with a new method: Ranked Choice Voting. In this method, when you fill out a ballot, you rank the candidates that you like.\
  Hover over individual dots above to see how different voters filled out their ballots.",
 "If we split up the votes, then it looks exactly the same as before. But notice we have not declared a winner, because no candidate has a majority (73) of votes supporting them yet. This is where ranking our ballots comes in: we know that Hoar cannot statistically win, but we also have information on voters' next choice. Let's see what happens.",
@@ -1474,9 +1486,11 @@ let update = ()=> {
 				maine = true
 
 				d3.select("#description")
+					.interrupt()
 					.style("opacity", 1)
 				
 				d3.select("#simhelp")
+					.interrupt()
 					.style("display", "none")
 
 				simFPTPButton.hidden = true 
@@ -1566,8 +1580,15 @@ function jumpAhead() {
 
 }
 
+d3.select("body")
+	.style("opacity", 0)
+	.transition()
+	.duration(1000)
+	.style("opacity", 1)
+
 
 update()
+
 
 //for testing
 //step = 8
