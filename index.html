@@ -13,6 +13,34 @@
 		overflow: hidden;
 	}
 
+	img {
+		width: 3vw;
+
+	}
+
+	#examples {
+		display: none;
+
+	}
+
+	.examplebutton{
+		background: #f8f8ff;
+		filter: drop-shadow(0 0.4rem 0.4rem rgba(0, 0, 0, 0.2));
+		font-family: 'Noto Sans JP';
+		border-radius: 5px;
+
+		border: 3px solid #2F2D2E;/*A974D4;*/
+		color: #2F2D2E;
+
+		outline: none;
+		width: 5vw;
+		height: 3vw;
+
+		margin: 0.5vw;
+
+		transition: 0.3s;
+	}
+
 	#minitext {
 		position: absolute;
 		bottom: 0vh;
@@ -214,6 +242,13 @@
 				<button hidden class="simbutton" id="simfptp" >Simulate FPTP</button>
 				<button hidden class="simbutton" id="simranked">Simulate RCV</button>
 				<button hidden class="simbutton" id="reset">Reset Simulation</button>
+			</div>
+			<div id="examples">
+				Try me: 
+				<button class="examplebutton" id ="example1button"><img src="example1.png"> </img></button>
+				<button class="examplebutton" id ="example2button"><img src="example2.png"> </img></button>
+				<button class="examplebutton" id ="example3button"><img src="example3.png"> </img></button>
+
 			</div>
 			<div id="simchoicecontainer">
 				Distribution of voter ideologies:  

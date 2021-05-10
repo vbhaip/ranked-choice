@@ -809,7 +809,7 @@ function simulate(candidates, size, rng=0.05, novote = 0.01){
 
 }
 
-let candidates = [
+var candidates = [
 	{index: 0.3, id: 0},
 	{index: 0.4, id: 1},
 	{index: 0.6, id: 2},
@@ -841,7 +841,7 @@ function updateSimulationInit() {
 //base code for selecting candidates on political spectrum
 //https://observablehq.com/@d3/circle-dragging-i
 
-function drawCandidates(candidates, w, xmid, ymid){
+function drawCandidates(w, xmid, ymid){
 
 
 
@@ -870,6 +870,9 @@ function drawCandidates(candidates, w, xmid, ymid){
 				.attr("stroke", null)
 				.attr("r", 10)
 				.style("cursor", "grabbing");
+
+			clearSimTimeouts()
+
 		}
 
 		function dragged(event, d) {
@@ -911,6 +914,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 			.on("click", (event,d) => {
 				//console.log(event)
 				if(candidates.length < 8){
+					console.log(candidates)
 					let ind = (event.x-xstart)/scaledw
 					candidates.push({
 						index: ind,
@@ -918,9 +922,12 @@ function drawCandidates(candidates, w, xmid, ymid){
 						x: ind*scaledw+xstart,
 						y: scaleY(ymid)
 					})
+					clearSimTimeouts()
+
 					updateSimulationInit();
 					drawCandSliders()
 					setOrderingMap()
+					console.log(candidates)
 				}
 			})
 			.attr("id", "rectslider")
@@ -959,6 +966,8 @@ function drawCandidates(candidates, w, xmid, ymid){
 					.duration(500)
 					.attr("fill", (d,i) => scaleColor[i])
 					.call(updateSimulationInit)
+
+				clearSimTimeouts()
 
 				setOrderingMap()
 
@@ -1216,7 +1225,19 @@ function drawSimulationInit(){
 		.style("top", scaleY(1.2) + "px")
 		.style("opacity", 0)
 		.transition()
-		.delay(5000)
+		.delay(4000)
+		.transition()
+		.duration(1000)
+		.style("opacity", 1)
+
+	d3.select("#examples")
+		.style("display", "block")
+		.style("position", "absolute")
+		.style("left", scaleRightX(0.13) + "px")
+		.style("top", scaleY(1.1) + "px")
+		.style("opacity", 0)
+		.transition()
+		.delay(4000)
 		.transition()
 		.duration(1000)
 		.style("opacity", 1)
@@ -1248,7 +1269,7 @@ function drawSimulation(){
 		[simline, series] = getRightSkewLine(simwidth, simheight, 0.5, simystart)
 	}
 
-	drawCandidates(candidates, simwidth, 0.5, simheight + simystart)
+	drawCandidates(simwidth, 0.5, simheight + simystart)
 
 	//console.log(simline)
 	let distribpath= svg.select("#simline").node() 
@@ -1273,6 +1294,11 @@ let description = document.getElementById("description")
 let simFPTPButton = document.getElementById("simfptp")
 let simRankedButton = document.getElementById("simranked")
 let resetButton= document.getElementById("reset")
+
+
+let example1Button = document.getElementById("example1button")
+let example2Button = document.getElementById("example2button")
+let example3Button = document.getElementById("example3button")
 
 let simChoiceSelect = document.getElementById("simchoice")
 
@@ -1327,6 +1353,62 @@ let newlegend = {
 	'X': 'No vote'
 }
 
+example1Button.onclick = () => {
+	clearSimTimeouts()
+	simChoiceSelect.value = "leftskew"
+	simdistrib = "leftskew"
+
+	candidates = [
+		{index: 0.05, id: 0},
+		{index: 0.5, id: 1},
+		{index: 0.75, id: 2},
+		{index: 0.8, id: 3},
+		{index: 0.85, id: 4},
+		{index: 0.9, id: 5},
+	]
+
+	//drawSimulationInit()
+	clearGraph()
+	drawSimulation()
+	updateSimulationInit()
+}
+
+
+example2Button.onclick = () => {
+	clearSimTimeouts()
+	simChoiceSelect.value = "uniform"
+	simdistrib = "uniform"
+
+	candidates = [
+		{index: 0.0, id: 0},
+		{index: 0.25, id: 1},
+		{index: 0.45, id: 2},
+		{index: 0.60, id: 3},
+		{index: 0.75, id: 4},
+		{index: 0.85, id: 5},
+	]
+
+	drawSimulation()
+	clearGraph()
+	updateSimulationInit()
+}
+
+example3Button.onclick = () => {
+	clearSimTimeouts()
+	simChoiceSelect.value = "gauss"
+	simdistrib = "gauss"
+
+	candidates = [
+		{index: 0.38, id: 0},
+		{index: 0.39, id: 1},
+		{index: 0.4, id: 2},
+		{index: 0.7, id: 3},
+	]
+
+	drawSimulation()
+	clearGraph()
+	updateSimulationInit()
+}
 
 simFPTPButton.hidden = true
 simRankedButton.hidden = true
@@ -1337,34 +1419,51 @@ simFPTPButton.onclick = () => {
 	runRound(simulationBallots, 1, candidates.length + 1, 0.7, newlegend, show_winners=true, fptp=true)
 	resetButton.disabled = false;
 }
+
+var timeouts = []
+
+function clearSimTimeouts(){
+	timeouts.forEach((d) => {
+		clearTimeout(d)
+	})
+	resetButton.disabled = true;
+	simFPTPButton.disabled = false;
+	simRankedButton.disabled = false;
+}
+
 simRankedButton.onclick = () => {
 	simRankedButton.disabled = true;
 	simFPTPButton.disabled = true;
-	resetButton.disabled = true;
+	resetButton.disabled = false;
 
 	for(let i = 1; i <= simulationBallots.meta["rounds"]; i++){
-		setTimeout( () => {
+		let timeout = setTimeout( () => {
 			let showresult = false
 			if(i == simulationBallots.meta["rounds"]){
 				showresult = true;
 				simRankedButton.disabled = false;
 				simFPTPButton.disabled = false;
-				resetButton.disabled = false;
 			}
 			runRound(simulationBallots, i, candidates.length + 1, 0.7, newlegend, show_winner=showresult)
 		}, 3000*(i-1))
+
+		timeouts.push(timeout)
 
 	}
 
 }
 resetButton.onclick = () => {
+	clearSimTimeouts()
 	clearGraph()
 	updateSimulationInit()
 	
 	resetButton.disabled = true;
+	simFPTPButton.disabled = false;
+	simRankedButton.disabled = false;
 }
 
 simChoiceSelect.onchange = () => {
+	clearSimTimeouts()
 	simdistrib = simChoiceSelect.value
 	drawSimulation()
 	clearGraph()
@@ -1490,6 +1589,7 @@ let update = ()=> {
 				d3.select("#description")
 					.interrupt()
 					.style("opacity", 1)
+					.style("width", "55vw")
 				
 				d3.select("#simhelp")
 					.interrupt()
@@ -1502,6 +1602,10 @@ let update = ()=> {
 
 
 				d3.select("#simchoicecontainer")
+					.style("display", "none")
+
+				d3.select("#examples")
+					.interrupt()
 					.style("display", "none")
 
 				svg.select("simheader").text("") 
@@ -1539,6 +1643,9 @@ let update = ()=> {
 				.transition()
 				.duration(1000)
 				.style("opacity", 0)
+				.transition()
+				.duration(1000)
+				.style("width", "0vw")
 
 
 
