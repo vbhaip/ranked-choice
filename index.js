@@ -106,16 +106,22 @@ var legend = {
 
 var circle;
 
-var width = window.screen.width;
-var leftwidth = window.screen.width*.63;
+var width = window.innerWidth;
+var leftwidth = window.innerWidth*.63;
 var rightwidth = width - leftwidth;
 var height = 500;
 
 var svg = d3.select("#viz")
 	.attr("width", width)
 	.attr("height", height)
+	.style("display", "block")
 
-var scaleX = d3.scaleLinear().domain([0, 1]).range([0, leftwidth])
+var maine = true;
+
+var scaleMaineX = d3.scaleLinear().domain([0, 1]).range([width*.2, width*.8])
+var scaleX = d3.scaleLinear().domain([0, 1]).range([width*.2, width*.8])
+
+var scaleLeftX= d3.scaleLinear().domain([0, 1]).range([0, leftwidth])
 var scaleRightX= d3.scaleLinear().domain([0, 1]).range([leftwidth, width])
 
 var scaleY = d3.scaleLinear().domain([0, 1]).range([0, height])
@@ -153,7 +159,7 @@ function ticked() {
 //var force = generateForce(dots, 0.5, 0.2)
 //	force.stop()
 
-function colorizeDots(data, maine=false) {
+function colorizeDots(data) {
 
 	circle = svg.selectAll(".viz-circle")
 	.data(data)
@@ -199,7 +205,7 @@ function renderGraph(data) {
 	.style("fill", function(d) { 
 		return "black"; 
 	})
-	.attr("cx", function(d) { return scaleX(d.x)} )
+	.attr("cx", function(d) { return maine ? scaleX(d.x) : scaleLeftX(d.x)} )
 	.attr("cy", function(d) { return scaleY(d.y)} )
 	.attr("r", function(d) { return 4} )
 	.on('mouseover', function(event, d) {
@@ -265,7 +271,7 @@ function generateForce(data, xcenter, ycenter){
 
 	force = d3.forceSimulation(data)
 	.force("collide", d3.forceCollide(5).strength(1))
-	  .force('forceX', d3.forceX(scaleX(xcenter)))
+	  .force('forceX', maine ? d3.forceX(scaleX(xcenter)) : d3.forceX(scaleLeftX(xcenter)))
 	  .force('forceY', d3.forceY(scaleY(ycenter)))
 	.force("charge", d3.forceManyBody().strength(1))
 	//.force('center', d3.forceCenter(scaleX(xcenter), scaleY(ycenter)).strength(1))
@@ -279,7 +285,7 @@ function generateForce(data, xcenter, ycenter){
 
 }
 
-function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{index: 2},{index: 3}], maine=true){
+function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{index: 2},{index: 3}]){
 	//data comes in as each item having a votes element
 	//first add an array to each item for the value for each round
 	//this should group all of the elements based off the first value
@@ -291,8 +297,8 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 	data.forEach((item) => {
 		item.roundVal = [item.votes[0]]
 		item.currVoteInd = 0
-		item.x = scaleX(item.x);
-		item.y = scaleX(item.y);
+		item.x = maine ? scaleX(item.x) : scaleLeftX(item.x);
+		item.y = scaleY(item.y);
 	})
 
 	let metadata = {}
@@ -319,12 +325,18 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 	//console.log(maxsize)
 	//console.log(currMaj)
 	let eliminated = new Set([])
+	let eliminatedlist = []
 
 	while(maxsize <= currMaj && minsize < currMaj){
+		eliminatedlist.push([])
 
 		groups.forEach(group => {
 			if(group.length == minsize){
-				eliminated.add(group[0].votes[group[0].currVoteInd]);
+				let tocheck = group[0].votes[group[0].currVoteInd];
+				if(!(eliminated.has(tocheck))){
+					eliminated.add(tocheck);
+					eliminatedlist[eliminatedlist.length - 1].push(tocheck)
+				}
 			}
 		})
 		groups.forEach( group => {
@@ -400,6 +412,7 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 	metadata.rounds = currRound + 1;
 	metadata.fptpWinner = fptpWinner
 	metadata.rankedWinner = rankedWinner
+	metadata.eliminated = eliminatedlist
 
 	return metadata
 
@@ -518,7 +531,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			}
 		})
 		.attr("id", (d,i) => "cluster-label-" + i)
-		.attr("x", (d,i)  => scaleX(x_locs[i]))
+		.attr("x", (d,i) => maine ? scaleX(x_locs[i]) : scaleLeftX(x_locs[i]))
 		.attr("y", scaleY(newy+0.2))
 		.attr("text-anchor", "middle")
 
@@ -538,7 +551,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			return toreturn
 		})
 		.attr("x", (d,i) => {
-			return scaleX(x_locs[i])
+			return maine ? scaleX(x_locs[i]) : scaleLeftX(x_locs[i])
 			//if(i == all_subset_dots.length - 1){
 			//	return scaleX(x_locs[all_subset_dots.length - 1])
 			//}
@@ -605,8 +618,8 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		? svg.select("#votetype") 
 		: svg.append("text")
 			.attr("id", "votetype")
-			.attr("x", scaleX(0.5))
-			.attr("y", scaleY(0.2))
+			.attr("x", maine ? scaleX(0.5) : scaleLeftX(0.5))
+			.attr("y", scaleY(newy-0.5))
 			.attr("text-anchor", "middle")
 			.attr("font-size", "20px")
 			.attr("class", "toptext")
@@ -615,11 +628,25 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		? svg.select("#subtext") 
 		: svg.append("text")
 			.attr("id", "subtext")
-			.attr("x", scaleX(0.5))
-			.attr("y", scaleY(0.25))
+			.attr("x", maine ? scaleX(0.5) : scaleLeftX(0.5))
+			.attr("y", scaleY(newy - 0.45))
 			.attr("text-anchor", "middle")
 			.attr("font-size", "15px")
 			.attr("class", "toptext")
+
+
+	let boxedtext = svg.select("#boxedtext").node() 
+		? svg.select("#boxedtext") 
+		: svg.append("text")
+			.attr("id", "boxedtext")
+			.attr("x", maine ? scaleX(0.5) : scaleLeftX(0.5))
+			.attr("y", scaleY(newy - 0.35))
+			.attr("text-anchor", "middle")
+			.attr("font-size", "15px")
+			.attr("class", "toptext")
+			//.style("outline", "1px solid black")
+			.attr("text-decoration", "underline")
+			.style("width", maine ? scaleX(0.8) - scaleX(0.2) : scaleLeftX(0.8) - scaleLeftX(0.2))
 
 	//console.log(votetype)
 	if(fptp){
@@ -627,12 +654,40 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			.text("First Past the Post")
 		subtext
 			.text("Goal: Most Votes")
+
+		boxedtext
+			.text("Voters pick one choice and the results are decided.")
 	}
 	else{
 		votetype
 			.text("Ranked Choice (Round " + roundnum + ")")
 		subtext
-			.text("Goal: 50% votes = " + data.meta["currMaj"][ranknum])
+			.text("Goal: 50% votes = " + data.meta["currMaj"][ranknum] + " votes")
+
+		//tells us if we're on our final round
+		let finalround = (ranknum+1 == data.meta.rounds);
+		console.log(finalround)
+		if(ranknum > 0){
+			if(finalround){
+				boxedtext
+					.text(legend["" + data.meta.rankedWinner] + " wins the election. First Past the Post and Ranked Choice Voting produced different winners. FPTP Winner: " + legend["" + data.meta.fptpWinner])
+			}
+			else{
+				boxedtext
+					.text("The candidate with the least votes (" + legend["" + data.meta["eliminated"][ranknum-1]] + ") is eliminated, and their votes go to their next choices.")
+			}
+		}
+		else{
+			if(finalround){
+				boxedtext
+					.text(legend["" + data.meta.rankedWinner] + " wins the election. First Past the Post and Ranked Choice Voting produced the same result.")
+			}
+			else{
+				boxedtext
+					.text("Voters pick their top choice candidates. The results are the same as before, but candidates need >50% of votes to win.")
+			}
+		}
+
 	}
 
 	
@@ -757,9 +812,9 @@ function updateSimulationInit() {
 
 	simulationBallots = simulate(candidates, 200)
 	colorizeDots(simulationBallots)
-	meta = initializeElectionData(simulationBallots, candidates, false)
+	meta = initializeElectionData(simulationBallots, candidates)
 	simulationBallots.meta = meta
-	runRound(simulationBallots, 0, 2, 0.5, legend)
+	runRound(simulationBallots, 0, 2, 0.4, legend)
 
 }
 
@@ -1211,7 +1266,7 @@ resetButton.hidden = true
 simChoiceSelect.hidden = true
 
 simFPTPButton.onclick = () => {
-	runRound(simulationBallots, 1, candidates.length + 1, 0.5, newlegend, show_winners=true, fptp=true)
+	runRound(simulationBallots, 1, candidates.length + 1, 0.7, newlegend, show_winners=true, fptp=true)
 	resetButton.disabled = false;
 }
 simRankedButton.onclick = () => {
@@ -1225,7 +1280,7 @@ simRankedButton.onclick = () => {
 				simRankedButton.disabled = false;
 				simFPTPButton.disabled = false;
 			}
-			runRound(simulationBallots, i, candidates.length + 1, 0.5, newlegend, show_winner=showresult)
+			runRound(simulationBallots, i, candidates.length + 1, 0.7, newlegend, show_winner=showresult)
 		}, 3000*(i-1))
 
 	}
@@ -1281,30 +1336,31 @@ let update = ()=> {
 
 			//kinda weird doing this, but it works?
 			dots.meta = meta;
-			runRound(dots, 0, 5, 0.2, legend, fptp=true)
+			runRound(dots, 0, 5, 0.4, legend, fptp=true)
 			break;
 		case 2:
-			colorizeDots(dots, maine=true);
+			colorizeDots(dots);
 			break;
 		case 3:
-			runRound(dots, 1, 5, 0.5, legend, true, fptp=true)
+			runRound(dots, 1, 5, 0.7, legend, true, fptp=true)
 			//runRound1();
 			break;
 		case 4:
 			break;
 		case 5:
-			runRound(dots, 0, 5, 0.2, legend)
+			runRound(dots, 0, 5, 0.4, legend)
 			break;
 		case 6:
-			runRound(dots, 1, 5, 0.5, legend)
+			runRound(dots, 1, 5, 0.7, legend)
 			break;
 		case 7:
-			runRound(dots, 2, 5, 0.5, legend)
+			runRound(dots, 2, 5, 0.7, legend)
 			break;
 		case 8:
-			runRound(dots, 3, 5, 0.5, legend, true)
+			runRound(dots, 3, 5, 0.7, legend, true)
 			break;
 		case 9:
+			maine = false;
 			break;
 		case 10:
 			drawSimulation()
