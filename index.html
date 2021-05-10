@@ -13,7 +13,13 @@
 
 	p{
 		font-size: 1.2vmax;
-		height: 2vmax;
+	}
+
+	#simchoicecontainer {
+		width: 30vw;
+		display: none; 
+		justify-content: center;
+
 	}
 
 
@@ -23,6 +29,7 @@
 		margin-right: auto;
 		text-align: center;
 		margin-bottom: 4vw;
+		height: 2vmax;
 	}
 
 	#nav {
@@ -79,6 +86,11 @@
 		background: #A974D4;
 		color: white;
 	}
+	.navbutton:disabled{
+		background: white;
+		color: #A974D4;
+		opacity: 0.2;
+	}
 
 	.simbutton {
 		background: white;
@@ -86,13 +98,15 @@
 		font-family: 'Roboto';
 		border-radius: 5px;
 
-		border: 2px solid #2F2D2E;
+		border: 3px solid #2F2D2E;/*A974D4;*/
 		color: #2F2D2E;
 
 		outline: none;
-		width: 15vw;
-		height: 5vw;
-		font-size: 1.2vw;
+		width: 10vw;
+		height: 3vw;
+		font-size: 1.1vw;
+
+		margin: 1vw;
 
 		transition: 0.3s;
 	}
@@ -110,11 +124,14 @@
 
 	}
 
-	select {
+	#simchoice {
 		background: white;
 		color: #2F2D2E;
 		font-family: 'Roboto';
 		outline: none;
+
+		width: 10vw;
+		height: 3vw;
 
 		border: 2px solid #2F2D2E;
 		border-radius: 3px;
@@ -141,18 +158,21 @@
 					</linearGradient>
 			  </defs>
 			</svg>
-			<br>
-			<button class="simbutton" id="simfptp" >Simulate FPTP</button>
-			<button class="simbutton" id="simranked">Simulate Ranked Choice</button>
-			<button class="simbutton" id="reset">Reset Simulation</button>
-			<br>
-			<select name="simchoice" id="simchoice">
-				<option value="gauss">Gaussian</option>
-				<option value="bimodgauss">Bimodal Gaussian</option>
-				<option value="uniform">Uniform</option>
-				<option value="leftskew">Left Skew</option>
-				<option value="rightskew">Right Skew</option>
-			</select>
+			<div id="simcontrol">
+				<button class="simbutton" id="simfptp" >Simulate FPTP</button>
+				<button class="simbutton" id="simranked">Simulate RCV</button>
+				<button class="simbutton" id="reset">Reset Simulation</button>
+			</div>
+			<div id="simchoicecontainer">
+				Distribution of voter ideologies:  
+				<select name="simchoice" id="simchoice">
+					<option value="gauss">Gaussian</option>
+					<option value="bimodgauss">Bimodal Gaussian</option>
+					<option value="uniform">Uniform</option>
+					<option value="leftskew">Left Skew</option>
+					<option value="rightskew">Right Skew</option>
+				</select>
+			</div>
 			<br/>
 			<div id="bottombar">
 				<p id="description">Voting systems</p>

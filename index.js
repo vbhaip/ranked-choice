@@ -255,6 +255,8 @@ function clearGraph(savecircles=false) {
 	svg.selectAll(".toptext")
 	.remove()
 
+	clearForces()
+
 }
 
 
@@ -669,8 +671,14 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		console.log(finalround)
 		if(ranknum > 0){
 			if(finalround){
-				boxedtext
-					.text(legend["" + data.meta.rankedWinner] + " wins the election. First Past the Post and Ranked Choice Voting produced different winners. FPTP Winner: " + legend["" + data.meta.fptpWinner])
+				if(data.meta.rankedWinner != data.meta.fptpWinner){
+					boxedtext
+						.text(legend["" + data.meta.rankedWinner] + " wins the election. First Past the Post and Ranked Choice Voting produced the same winners.")
+				}
+				else{
+					boxedtext
+						.text(legend["" + data.meta.rankedWinner] + " wins the election. First Past the Post and Ranked Choice Voting produced different winners. FPTP winner: " + legend["" + data.meta.fptpWinner])
+				}
 			}
 			else{
 				boxedtext
@@ -855,7 +863,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 			.clamp(true)
 
 		function dragstarted(event, d) {
-			d3.select(this).raise().attr("stroke", null);
+			d3.select(this).raise().attr("stroke", null).attr("r", 10);
 		}
 
 		function dragged(event, d) {
@@ -868,7 +876,7 @@ function drawCandidates(candidates, w, xmid, ymid){
 		}
 
 		function dragended(event, d) {
-			d3.select(this).attr("stroke", "black");
+			d3.select(this).attr("stroke", "black").attr("r", 6);
 			updateSimulationInit();
 			setOrderingMap()
 		}
@@ -1161,26 +1169,62 @@ function getBimodalGaussianLine(w, h, xcenter, ycenter){
 	//	.attr("stroke", "red")
 }
 
+function drawSimulationInit(){
+	simFPTPButton.hidden = false 
+	simRankedButton.hidden = false 
+	resetButton.hidden = false 
+	simChoiceSelect.hidden = false
+
+	d3.select("#simcontrol")
+		.style("position", "absolute")
+		.style("left", scaleRightX(0) + "px")
+		.style("top", scaleY(0.9) + "px")
+
+	d3.select("#simchoicecontainer")
+		.style("position", "absolute")
+		.style("left", scaleRightX(0.2) + "px")
+		.style("top", scaleY(0.7) + "px")
+		.style("display", "inline")
+
+	let simheader= svg.select("#simheader").node() 
+		? svg.select("#simheader") 
+		: svg.append("text")
+
+	//console.log(simheader)
+	simheader
+		.attr("x", scaleRightX(0.5))
+		.attr("y", scaleY(0.2/2))
+		.attr("text-anchor", "middle")
+		.text("Simulation Parameters")
+		.style("font-size", "1.5vw")
+}
 function drawSimulation(){
+
+	let simwidth = 0.75
+	let simheight= 0.35
+	let simystart = 0.2
+
+
 	let simline, series;
 
+
 	if(simdistrib == "gauss"){
-		[simline, series] = getGaussianLine(0.5, 0.25, 0.5, 0.1)
+		[simline, series] = getGaussianLine(simwidth, simheight, 0.5, simystart)
 	}
 	if(simdistrib == "bimodgauss"){
-		[simline, series] = getBimodalGaussianLine(0.5, 0.25, 0.5, 0.1)
+		[simline, series] = getBimodalGaussianLine(simwidth, simheight, 0.5, simystart)
 	}
 	if(simdistrib == "uniform"){
-		[simline, series] = getUniformLine(0.5, 0.25, 0.5, 0.1)
+		[simline, series] = getUniformLine(simwidth, simheight, 0.5, simystart)
 	}
 	if(simdistrib == "leftskew"){
-		[simline, series] = getLeftSkewLine(0.5, 0.25, 0.5, 0.1)
+		[simline, series] = getLeftSkewLine(simwidth, simheight, 0.5, simystart)
 	}
 	if(simdistrib == "rightskew"){
-		[simline, series] = getRightSkewLine(0.5, 0.25, 0.5, 0.1)
+		[simline, series] = getRightSkewLine(simwidth, simheight, 0.5, simystart)
 	}
 
-	drawCandidates(candidates, 0.5, 0.5, 0.35)
+	drawCandidates(candidates, simwidth, 0.5, simheight + simystart)
 
 	//console.log(simline)
 	let distribpath= svg.select("#simline").node() 
@@ -1236,7 +1280,7 @@ let parties = [
 	"Vision",
 	"Falcon",
 	"Gamora",
-	"Antman",
+	"Ant-Man",
 	"Wolverine"]
 
 //https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
@@ -1320,6 +1364,8 @@ description.innerHTML = descriptions[0]
 
 let step = 0;
 var ballots;
+var backward = false;
+
 let update = ()=> {
 
 	//step += 1
@@ -1329,7 +1375,15 @@ let update = ()=> {
 	let meta;
 
 	switch(step){
+		case 0:
+			clearGraph()
+			prevButton.disabled = true;
+			break;
 		case 1:
+			for(let i=0; i < dots.length; i++){
+				dots[i]['x'] = 0.5
+				dots[i]['y'] = 0.5
+			}
 			renderGraph(dots)
 			meta = initializeElectionData(dots)
 			//console.log(meta)
@@ -1339,6 +1393,9 @@ let update = ()=> {
 			runRound(dots, 0, 5, 0.4, legend, fptp=true)
 			break;
 		case 2:
+			if(backward){
+				runRound(dots, 0, 5, 0.4, legend, fptp=true)
+			}
 			colorizeDots(dots);
 			break;
 		case 3:
@@ -1346,6 +1403,9 @@ let update = ()=> {
 			//runRound1();
 			break;
 		case 4:
+			if(backward){
+				runRound(dots, 1, 5, 0.7, legend, true, fptp=true)
+			}
 			break;
 		case 5:
 			runRound(dots, 0, 5, 0.4, legend)
@@ -1357,22 +1417,56 @@ let update = ()=> {
 			runRound(dots, 2, 5, 0.7, legend)
 			break;
 		case 8:
+			if(backward){
+				maine=true
+			}
 			runRound(dots, 3, 5, 0.7, legend, true)
 			break;
 		case 9:
+			if(backward){
+				maine = true
+
+				simFPTPButton.hidden = true 
+				simRankedButton.hidden = true 
+				resetButton.hidden = true
+				simChoiceSelect.hidden =  true
+
+
+				d3.select("#simchoicecontainer")
+					.style("display", "none")
+
+				svg.select("simheader").text("") 
+
+				svg.selectAll("text,path,rect,.candidates").remove()
+
+				for(let i=0; i < dots.length; i++){
+					dots[i]['x'] = 0.5
+					dots[i]['y'] = 0.5
+				}
+				renderGraph(dots)
+				meta = initializeElectionData(dots)
+				colorizeDots(dots)
+				//console.log(meta)
+
+				//kinda weird doing this, but it works?
+				dots.meta = meta;
+				runRound(dots, 3, 5, 0.7, legend, true)
+				break;
+
+			}
 			maine = false;
 			break;
 		case 10:
+			maine=false;
+			drawSimulationInit()
 			drawSimulation()
 			clearGraph()
 			updateSimulationInit()
 
-			simFPTPButton.hidden = false 
-			simRankedButton.hidden = false 
-			resetButton.hidden = false 
-			simChoiceSelect.hidden = false
+			
 
 
+			nextButton.disabled = true;
 			resetButton.disabled= true 
 
 			break;
@@ -1391,14 +1485,20 @@ let update = ()=> {
 };
 
 nextButton.onclick = () => {
+	backward = false;
 	step += 1;
+	prevButton.disabled = false;
 	update()
 }
 
 prevButton.onclick = () => {
+	backward = true;
 	step -= 1;
+	nextButton.disabled = false;
 	update()
 }
 
+update()
+
 //for testing
-//step = 9
+//step = 8
