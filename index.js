@@ -695,7 +695,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			}
 			else{
 				boxedtext
-					.text("Voters pick their top choice candidates. The results are the same as First Past the Post so far, but candidates need >50% of votes to win, so no winner is chosen yet.")
+					.text("Voters pick their top choice candidates. Candidates need >50% of votes to win, so no winner is chosen yet.")
 			}
 		}
 
@@ -1340,6 +1340,8 @@ simFPTPButton.onclick = () => {
 simRankedButton.onclick = () => {
 	simRankedButton.disabled = true;
 	simFPTPButton.disabled = true;
+	resetButton.disabled = true;
+
 	for(let i = 1; i <= simulationBallots.meta["rounds"]; i++){
 		setTimeout( () => {
 			let showresult = false
