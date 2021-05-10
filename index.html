@@ -4,15 +4,47 @@
 <html>
 <style>
 	@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400&display=swap');
+	@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;900&display=swap');
 
 	body {
-		font-family: 'Roboto';
+		font-family: 'Noto Sans JP';
 		background: #f8f8ff;
 		margin: 0;
+		overflow: hidden;
+	}
+
+	#jumpahead{
+		width: 20vw;
+		margin-left: auto;
+		margin-right: auto;
+		text-align: center;
+		margin-top: 0vmax;
+		height: 2vmax;
+		display: block;
+		font-size: 0.8vmax;
+	}
+
+	a{
+		color: purple;
+
 	}
 
 	p{
 		font-size: 1.2vmax;
+	}
+
+	#simhelp {
+		width: 28%;
+		display: none;
+		position: absolute;
+
+	}
+
+	#simhelp p{
+		color: #2F2D2E;
+		opacity: 0.5;
+		font-size: 0.8vmax;
+
 	}
 
 	#simchoicecontainer {
@@ -28,8 +60,9 @@
 		margin-left: auto;
 		margin-right: auto;
 		text-align: center;
-		margin-bottom: 4vw;
-		height: 2vmax;
+		margin-bottom: 3vw;
+		margin-top: -1.5vmax;
+		height: 4vmax;
 	}
 
 	#nav {
@@ -45,7 +78,9 @@
 		width: 80vw;
 		height: 8vw;
 		margin: 10vw;
+		margin-top: 8vmax;
 		padding: 0;
+		display: block;
 
 	}
 
@@ -65,7 +100,7 @@
 	.navbutton {
 		background: white;
 		filter: drop-shadow(0 0.4rem 0.4rem rgba(0, 0, 0, 0.2));
-		font-family: 'Roboto';
+		font-family: 'Noto Sans JP';
 		border-radius: 5px;
 		
 
@@ -95,7 +130,7 @@
 	.simbutton {
 		background: white;
 		filter: drop-shadow(0 0.4rem 0.4rem rgba(0, 0, 0, 0.2));
-		font-family: 'Roboto';
+		font-family: 'Noto Sans JP';
 		border-radius: 5px;
 
 		border: 3px solid #2F2D2E;/*A974D4;*/
@@ -127,7 +162,7 @@
 	#simchoice {
 		background: white;
 		color: #2F2D2E;
-		font-family: 'Roboto';
+		font-family: 'Noto Sans JP';
 		outline: none;
 
 		width: 10vw;
@@ -173,6 +208,9 @@
 					<option value="rightskew">Right Skew</option>
 				</select>
 			</div>
+			<div id="simhelp">
+				<p>Help: To simulate an election, click the two simulate buttons. The distribution curve at the top represents the distribution of voter beliefs across the political spectrum. Below the distribution is a bar that shows where candidates lie on that spectrum. Try dragging the candidates around. To add a candidate, click on an open spot on the bar. To remove a candidate, right-click on the candidate.</p>
+			</div>
 			<br/>
 			<div id="bottombar">
 				<p id="description">Voting systems</p>
@@ -183,6 +221,9 @@
 				<div />
 			</div>
 		</div>
+		</br>
+		<p id="jumpahead">Been here before? Jump to the <a id="jumpaheadlink" href="javascript:;" onclick="jumpAhead()">simulation</a>.</p>
+
 		<script src="index.js"></script>
 	</body>
 

@@ -671,7 +671,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		console.log(finalround)
 		if(ranknum > 0){
 			if(finalround){
-				if(data.meta.rankedWinner != data.meta.fptpWinner){
+				if(data.meta.rankedWinner == data.meta.fptpWinner){
 					boxedtext
 						.text(legend["" + data.meta.rankedWinner] + " wins the election. First Past the Post and Ranked Choice Voting produced the same winners.")
 				}
@@ -1197,6 +1197,18 @@ function drawSimulationInit(){
 		.attr("text-anchor", "middle")
 		.text("Simulation Parameters")
 		.style("font-size", "1.5vw")
+
+	d3.select("#simhelp")
+		.style("opacity", 0)
+		.transition()
+		.delay(5000)
+		.transition()
+		.duration(1000)
+		.style("left", scaleRightX(0.13) + "px")
+		.style("top", scaleY(1.2) + "px")
+		.style("display", "block")
+		.style("opacity", 1)
+
 }
 function drawSimulation(){
 
@@ -1323,16 +1335,18 @@ simRankedButton.onclick = () => {
 				showresult = true;
 				simRankedButton.disabled = false;
 				simFPTPButton.disabled = false;
+				resetButton.disabled = false;
 			}
 			runRound(simulationBallots, i, candidates.length + 1, 0.7, newlegend, show_winner=showresult)
 		}, 3000*(i-1))
 
 	}
-	resetButton.disabled = false;
 
 }
 resetButton.onclick = () => {
 	clearGraph()
+	updateSimulationInit()
+	
 	resetButton.disabled = true;
 }
 
@@ -1344,20 +1358,24 @@ simChoiceSelect.onchange = () => {
 	updateSimulationInit()
 }
 
-descriptions = [
-"What's the difference between ranked choice voting and the current voting system we use right now?",
-"Let's look at Maine's 2018 2nd Congressional Election to see the differences between First Past the Post (FPTP) and Ranked Choice Voting (RCV). Here \
-each dot represents ~2,000 votes",
-"We can color each dot based off who their first choice was on the ballot.",
-"Now, let's split up each group based off who they voted for.",
-"We've simulated what you're used to seeing in an election. Here Brian Poliquin has won using FPTP. But notice that Poliquin does not have a majority of \
-constituents who necessarily want him in office. What if there was a better way we could elect candidates?",
-"Let's redo this election with a new method. In this method, when you fill out a ballot, you rank the candidates that you like.",
-"If we split up the votes, then it looks the same as before. But notice we have not declared a winner, because no candidate has a majority of candidates that voted for them. We know that Hoar cannot win, but we also have information on who their next choice is. Let's see what happens",
-"We moved the candidates votes to their next choice. Note that the 'No vote' choice means that the ballots did not specify their next choice (which is completely valid!). But notice we still don't who a majority of the citizens support. We can repeat the process, eliminating Bond and looking at her votes' next choices.",
-"As it turns out, the majority of constituents prefer Jared F. Golden. In this case, RCV has produced a different winner than if we just counted all the first-choice votes with FPTP",
-"Why does this matter? It means that people can vote for who they want to, like third party candidates, without worrying about who other people are voting for. It leads to less extreme candidates, and overall a better democracy.",
-"Now, you can explore Ranked Choice Voting for yourself."
+
+
+let descriptions = [
+"Why should we use Ranked Choice Voting over what we already use? First, let's find out what Ranked Choice Voting even is.",
+"Maine is one of few states that use Ranked Choice Voting. Let's look at Maine's 2018 2nd Congressional Election to see the differences between what we currently use&mdash;First Past the Post (FPTP)&mdash;and Ranked Choice Voting (RCV). Here \
+each dot represents ~2,000 votes.",
+"We can color each dot based off who each person voted for.",
+"Let's split it up so it's easier to see. We've simulated what you're used to seeing in an election. Here Brian Poliquin has won using FPTP. (You may notice a 'No vote' choice on the right&mdash;this means that voters left the ballot blank or didn't fill it out correctly).",
+"But notice out of the 144 total votes, only 67 went to him (46.5%). The problem with FPTP is that it only requires a plurality of the votes.\
+ This means that candidates may win even if a majority of the population doesn't support them.",
+"Let's redo this election with a new method: Ranked Choice Voting. In this method, when you fill out a ballot, you rank the candidates that you like.\
+ Hover over individual dots above to see how different voters filled out their ballots.",
+"If we split up the votes, then it looks exactly the same as before. But notice we have not declared a winner, because no candidate has a majority (73) of votes supporting them yet. This is where ranking our ballots comes in: we know that Hoar cannot statistically win, but we also have information on voters' next choice. Let's see what happens.",
+"We moved those who voted for Hoar to their next choice. One dot shifted to 'No vote', which means that those voters only wanted Hoar and left the rest of their ballot blank (which is totally okay!). But notice we still don't know who a majority of the citizens support. We can repeat the process, eliminating Bond and looking at her voters' next choices.",
+"As it turns out, the majority of constituents in this election actually preferred Jared F. Golden. In this case, Ranked Choice Voting has produced a different winner than First Past the Post.",
+"Why does this matter? Proponents of Ranked Choice Voting argue that it means that people can vote for who they want to, like third party candidates, without worrying about who others are voting for (called the 'spoiler effect'). This means we get less extreme candidates that represent the population. Critics argue that such a system is confusing and can reduce voter turnout.",
+"Understanding the implications of Ranked Choice Voting compared with First Past the Post is crucial as it affects the foundation of the county: our democracy.",
+"Now, you can explore Ranked Choice Voting for yourself using this simulation."
 ]
 
 description.innerHTML = descriptions[0]
@@ -1376,10 +1394,36 @@ let update = ()=> {
 
 	switch(step){
 		case 0:
+			d3.select("#jumpahead").style("display", "block")
 			clearGraph()
 			prevButton.disabled = true;
+
+			svg.append("text")
+				.attr("x", width/2)
+				.attr("y", scaleY(0.5))
+				.text("Ranked Choice Voting?")
+				.attr("text-anchor", "middle")
+				.style("font-size", "3vw")
+				.attr("fill", "#A974D4")
+				.attr("class", "title")
+				.attr("font-weight", 900)
+
+			svg.append("text")
+				.attr("x", width/2)
+				.attr("y", scaleY(0.6))
+				.text("a visual exploration by Vinay Bhaip")
+				.attr("text-anchor", "middle")
+				.style("font-size", "1vw")
+				.attr("fill", "black")
+				.attr("class", "title")
+
+
+
 			break;
 		case 1:
+			d3.select("#jumpahead").style("display", "none")
+			svg.selectAll(".title").remove()
+
 			for(let i=0; i < dots.length; i++){
 				dots[i]['x'] = 0.5
 				dots[i]['y'] = 0.5
@@ -1423,8 +1467,17 @@ let update = ()=> {
 			runRound(dots, 3, 5, 0.7, legend, true)
 			break;
 		case 9:
+			maine = false;
+			break;
+		case 10:
 			if(backward){
 				maine = true
+
+				d3.select("#description")
+					.style("opacity", 1)
+				
+				d3.select("#simhelp")
+					.style("display", "none")
 
 				simFPTPButton.hidden = true 
 				simRankedButton.hidden = true 
@@ -1454,9 +1507,9 @@ let update = ()=> {
 				break;
 
 			}
-			maine = false;
+
 			break;
-		case 10:
+		case 11:
 			maine=false;
 			drawSimulationInit()
 			drawSimulation()
@@ -1464,13 +1517,17 @@ let update = ()=> {
 			updateSimulationInit()
 
 			
+			d3.select("#description")
+				.transition()
+				.delay(3000)
+				.transition()
+				.duration(1000)
+				.style("opacity", 0)
+
 
 
 			nextButton.disabled = true;
 			resetButton.disabled= true 
-
-			break;
-		case 11:
 			//ballots = simulate(candidates, 200)
 			//colorizeDots(ballots)
 			//meta = initializeElectionData(ballots, candidates)
@@ -1497,6 +1554,18 @@ prevButton.onclick = () => {
 	nextButton.disabled = false;
 	update()
 }
+
+function jumpAhead() {
+	svg.selectAll(".title").remove()
+	d3.select("#jumpahead").style("display", "none")
+
+	step = 11;
+	update()
+	nextButton.disabled=true;
+	prevButton.disabled=false;
+
+}
+
 
 update()
 
