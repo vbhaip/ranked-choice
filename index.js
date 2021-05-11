@@ -576,7 +576,17 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			if(show_winner && i == all_subset_dots.length - 1){
 				return 0.1
 			}
-			if(show_winner && all_subset_dots[orderingmap[i]].length != maxsize){
+			if(i == all_subset_dots.length - 1){
+				return 1;
+			}
+			console.log("---")
+			console.log(i)
+			console.log(all_subset_dots.length)
+			if(all_subset_dots[orderingmap[i]].length == 0){
+				return 0.1
+			}
+			//if(show_winner && all_subset_dots[orderingmap[i]].length != maxsize){
+			if(show_winner && all_subset_dots[orderingmap[i]][0].roundVal[ranknum] != winnerind){
 				//console.log("---" + i + "---")
 				return 0.1
 			}
@@ -593,8 +603,16 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			if(show_winner && i == all_subset_dots.length - 1){
 				return 0.1
 			}
+			if(i == all_subset_dots.length - 1){
+				return 1;
+			}
+			if(all_subset_dots[orderingmap[i]].length == 0){
+				return 0.1
+			}
 			//code below buggy?
-			if(show_winner && all_subset_dots[orderingmap[i]].length != maxsize){
+			//console.log(all_subset_dots)
+			//if(show_winner && all_subset_dots[orderingmap[i]].length != maxsize){
+			if(show_winner && all_subset_dots[orderingmap[i]][0].roundVal[ranknum] != winnerind){
 				//console.log("..." + i + "...")
 				return 0.1
 			}
@@ -1378,7 +1396,7 @@ example1Button.onclick = () => {
 	d3.select("#description")
 		.style("width", "30vw")
 		.style("opacity", 1)
-		.text("Here, we have voters who primarily are conservative. But there are many candidates who are also conservative, how does that affect the results when we use FPTP versus RCV? (Try it out!)")
+		.text("Here, we have voters who primarily are conservative. But there are many candidates who are also conservative; how does our voting system affect the result? (Click each simulate button!)")
 }
 
 
@@ -1415,7 +1433,7 @@ example3Button.onclick = () => {
 		{index: 0.38, id: 0},
 		{index: 0.39, id: 1},
 		{index: 0.4, id: 2},
-		{index: 0.7, id: 3},
+		{index: 0.65, id: 3},
 	]
 
 	drawSimulation()
