@@ -1394,6 +1394,7 @@ example1Button.onclick = () => {
 	updateSimulationInit()
 
 	d3.select("#description")
+		.interrupt()
 		.style("width", "30vw")
 		.style("opacity", 1)
 		.text("Here, we have voters who primarily are conservative. But there are many candidates who are also conservative; how does our voting system affect the result? (Click each simulate button!)")
