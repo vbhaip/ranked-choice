@@ -872,6 +872,7 @@ function drawCandidates(w, xmid, ymid){
 				.style("cursor", "grabbing");
 
 			clearSimTimeouts()
+			clearDescriptionText()
 
 		}
 
@@ -923,6 +924,7 @@ function drawCandidates(w, xmid, ymid){
 						y: scaleY(ymid)
 					})
 					clearSimTimeouts()
+					clearDescriptionText()
 
 					updateSimulationInit();
 					drawCandSliders()
@@ -968,6 +970,7 @@ function drawCandidates(w, xmid, ymid){
 					.call(updateSimulationInit)
 
 				clearSimTimeouts()
+				clearDescriptionText()
 
 				setOrderingMap()
 
@@ -1371,6 +1374,11 @@ example1Button.onclick = () => {
 	clearGraph()
 	drawSimulation()
 	updateSimulationInit()
+
+	d3.select("#description")
+		.style("width", "30vw")
+		.style("opacity", 1)
+		.text("Here, we have voters who primarily are conservative. But there are many candidates who are also conservative, how does that affect the results when we use FPTP versus RCV? (Try it out!)")
 }
 
 
@@ -1391,6 +1399,11 @@ example2Button.onclick = () => {
 	drawSimulation()
 	clearGraph()
 	updateSimulationInit()
+
+	d3.select("#description")
+		.style("width", "30vw")
+		.style("opacity", 1)
+		.text("In this scenario, all the voters are distributed equally along the political spectrum. Sometimes, the two voting systems produce the same result, and sometimes they don't. Running the scenario multiple times may give different results!")
 }
 
 example3Button.onclick = () => {
@@ -1408,6 +1421,11 @@ example3Button.onclick = () => {
 	drawSimulation()
 	clearGraph()
 	updateSimulationInit()
+
+	d3.select("#description")
+		.style("width", "30vw")
+		.style("opacity", 1)
+		.text("Here, we can see the spoiler effect in place. Three moderate candidates are clumped together, splitting the vote and allowing a more extreme candidate to win with the current system.")
 }
 
 simFPTPButton.hidden = true
@@ -1429,6 +1447,13 @@ function clearSimTimeouts(){
 	resetButton.disabled = true;
 	simFPTPButton.disabled = false;
 	simRankedButton.disabled = false;
+}
+
+function clearDescriptionText(){
+	d3.select("#description")
+		.style("opacity", 0)
+		.style("width", "0vw")
+
 }
 
 simRankedButton.onclick = () => {
@@ -1464,6 +1489,8 @@ resetButton.onclick = () => {
 
 simChoiceSelect.onchange = () => {
 	clearSimTimeouts()
+	clearDescriptionText()
+
 	simdistrib = simChoiceSelect.value
 	drawSimulation()
 	clearGraph()
@@ -1482,7 +1509,7 @@ each dot represents ~2,000 votes.",
 "But notice out of the 144 total votes, only 67 went to him (46.5%). The problem with FPTP is that it only requires a plurality of the votes.\
  This means that a candidate may win even if a majority of the population doesn't support them.",
 "Let's redo this election with a new method: Ranked Choice Voting. In this method, when you fill out a ballot, you rank the candidates that you like.\
- Hover over individual dots above to see how different voters filled out their ballots.",
+ Hover over individual dots above to see how different voters filled out their ballots. Most voters picked only one choice&mdash;pay close attention to the green and yellow dots, however.",
 "If we split up the votes, then it looks exactly the same as before. But notice we have not declared a winner, because no candidate has a majority (73) of votes supporting them yet. This is where ranking our ballots comes in: we know that Hoar cannot statistically win, but we also have information on voters' next choice. Let's see what happens.",
 "We moved those who voted for Hoar to their next choice. One dot shifted to 'No vote', which means that those voters only wanted Hoar and left the rest of their ballot blank (which is totally okay!). But notice we still don't know who a majority of the citizens support. We can repeat the process, eliminating Bond and looking at her voters' next choices.",
 "As it turns out, the majority of constituents in this election actually preferred Jared F. Golden. In this case, Ranked Choice Voting has produced a different winner than First Past the Post.",
@@ -1513,10 +1540,20 @@ let update = ()=> {
 
 			svg.append("text")
 				.attr("x", width/2)
-				.attr("y", scaleY(0.5))
-				.text("Ranked Choice Voting?")
+				.attr("y", scaleY(0.4))
+				.text("Ranked Choice Voting:")
 				.attr("text-anchor", "middle")
 				.style("font-size", "3vw")
+				.attr("fill", "#A974D4")
+				.attr("class", "title")
+				.attr("font-weight", 900)
+
+			svg.append("text")
+				.attr("x", width/2)
+				.attr("y", scaleY(0.5))
+				.text("A Stronger Democracy?")
+				.attr("text-anchor", "middle")
+				.style("font-size", "2vw")
 				.attr("fill", "#A974D4")
 				.attr("class", "title")
 				.attr("font-weight", 900)
