@@ -1569,7 +1569,7 @@ let update = ()=> {
 			svg.append("text")
 				.attr("x", width/2)
 				.attr("y", scaleY(0.5))
-				.text("A Stronger Democracy?")
+				.text("A More Representative Democracy?")
 				.attr("text-anchor", "middle")
 				.style("font-size", "2vw")
 				.attr("fill", "#A974D4")
