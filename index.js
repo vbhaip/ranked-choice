@@ -1,98 +1,99 @@
 //Vinay Bhaip vb4ztv
 
-//actual interesting starts at line 90ish
+//actual interesting starts at line 100ish
 //helpful data from https://github.com/ranked-vote/reports/blob/master/us/me/2018/11/cd02/report.json
-
-
 var dots = []
+loadMaineData()
 
-let firstround = {
-	'0': 67,
-	'1': 66,
-	'2': 8,
-	'3': 3,
-	'X': 3
-}
-
-//sum the firstround dict
-
-//populate dots with voting records
-
-for(let i=0; i<firstround['0']; i++){
-	let toAdd = {
-		'rank1': '0',
-		'votes': ['0']
+function loadMaineData(){
+	let firstround = {
+		'0': 67,
+		'1': 66,
+		'2': 8,
+		'3': 3,
+		'X': 3
 	}
 
-	dots.push(toAdd)
-}
+	//sum the firstround dict
 
-for(let i=0; i<firstround['1']; i++){
-	let toAdd = {
-		'rank1': '1',
-		'votes': ['1']
+	//populate dots with voting records
+
+	for(let i=0; i<firstround['0']; i++){
+		let toAdd = {
+			'rank1': '0',
+			'votes': ['0']
+		}
+
+		dots.push(toAdd)
 	}
 
-	dots.push(toAdd)
-}
+	for(let i=0; i<firstround['1']; i++){
+		let toAdd = {
+			'rank1': '1',
+			'votes': ['1']
+		}
 
-for(let i=0; i<firstround['2']; i++){
-	let toAdd = {
-		'rank1': '2',
-		'votes': ['2']
+		dots.push(toAdd)
 	}
 
-	if(i < 2){
-		toAdd['rank2'] = '0'
-		toAdd.votes.push('0')
-	}
-	else if(i < 2+4){
-		toAdd['rank2'] = '1'
-		toAdd.votes.push('1')
-	}
-	else{
-		toAdd['rank2'] = 'X'
-		toAdd.votes.push('X')
-	}
+	for(let i=0; i<firstround['2']; i++){
+		let toAdd = {
+			'rank1': '2',
+			'votes': ['2']
+		}
 
-	dots.push(toAdd)
-}
+		if(i < 2){
+			toAdd['rank2'] = '0'
+			toAdd.votes.push('0')
+		}
+		else if(i < 2+4){
+			toAdd['rank2'] = '1'
+			toAdd.votes.push('1')
+		}
+		else{
+			toAdd['rank2'] = 'X'
+			toAdd.votes.push('X')
+		}
 
-for(let i=0; i<firstround['3']; i++){
-	let toAdd = {
-		'rank1': '3',
-		'votes': ['3']
-
-	}
-
-	if(i < 1){
-		toAdd['rank2'] = '0'
-		toAdd.votes.push('0')
-	}
-	else if(i < 1+1){
-		toAdd['rank2'] = '1'
-		toAdd.votes.push('1')
-	}
-	else{
-		toAdd['rank2'] = 'X'
-		toAdd.votes.push('X')
+		dots.push(toAdd)
 	}
 
-	dots.push(toAdd)
-}
+	for(let i=0; i<firstround['3']; i++){
+		let toAdd = {
+			'rank1': '3',
+			'votes': ['3']
 
-for(let i=0; i<firstround['X']; i++){
-	let toAdd = {
-		'rank1': 'X',
-		'votes': ['X']
+		}
+
+		if(i < 1){
+			toAdd['rank2'] = '0'
+			toAdd.votes.push('0')
+		}
+		else if(i < 1+1){
+			toAdd['rank2'] = '1'
+			toAdd.votes.push('1')
+		}
+		else{
+			toAdd['rank2'] = 'X'
+			toAdd.votes.push('X')
+		}
+
+		dots.push(toAdd)
 	}
 
-	dots.push(toAdd)
-}
+	for(let i=0; i<firstround['X']; i++){
+		let toAdd = {
+			'rank1': 'X',
+			'votes': ['X']
+		}
 
-for(let i=0; i < dots.length; i++){
-	dots[i]['x'] = 0.5
-	dots[i]['y'] = 0.5
+		dots.push(toAdd)
+	}
+
+	for(let i=0; i < dots.length; i++){
+		dots[i]['x'] = 0.5
+		dots[i]['y'] = 0.5
+	}
 }
 
 
@@ -119,7 +120,7 @@ var svg = d3.select("#viz")
 
 var maine = true;
 
-var scaleMaineX = d3.scaleLinear().domain([0, 1]).range([width*.2, width*.8])
+//scaleX -> scales through whole screen, scaleLeft/RightX -> scale for simulation 
 var scaleX = d3.scaleLinear().domain([0, 1]).range([width*.2, width*.8])
 
 var scaleLeftX= d3.scaleLinear().domain([0, 1]).range([0, leftwidth])
@@ -141,11 +142,10 @@ var simdistrib = "gauss"
 
 var orderingmap = [0, 1, 2, 3]
 
+//called at each simulation tick
 function ticked() {
 
 	circle
-		//.transition()
-		//.duration(25)
 		.attr("cx", d => d.x)
 		.attr("cy", d => d.y)
 
@@ -157,9 +157,7 @@ function ticked() {
 }
 
 
-//var force = generateForce(dots, 0.5, 0.2)
-//	force.stop()
-
+//color dots based on first choice data 
 function colorizeDots(data) {
 
 	circle = svg.selectAll(".viz-circle")
@@ -197,8 +195,8 @@ function colorizeDots(data) {
 
 }
 
+//render circles for viz
 function renderGraph(data) {
-
 	circle = svg.selectAll(".viz-circle")
 	.data(data)
 	.join("circle")
@@ -230,14 +228,9 @@ function renderGraph(data) {
 			.style('opacity', 0)
 			.style('display', 'none')
 	})
-
-	//const NUM_ITERATIONS = 1000;
-	//force.tick(NUM_ITERATIONS);
-	//force.on("tick", ticked)
-	//.restart()
-	//force.stop()
 }	
 
+//wipe screen
 function clearGraph(savecircles=false) {
 	if(!savecircles){
 		svg.selectAll(".viz-circle")
@@ -257,10 +250,9 @@ function clearGraph(savecircles=false) {
 	.remove()
 
 	clearForces()
-
 }
 
-
+//get rid of active forces
 function clearForces(){
 	for(ind in currentForces){
 		force = currentForces[ind]
@@ -270,6 +262,7 @@ function clearForces(){
 
 }
 
+//generate force at location
 function generateForce(data, xcenter, ycenter){
 
 	force = d3.forceSimulation(data)
@@ -277,10 +270,7 @@ function generateForce(data, xcenter, ycenter){
 	  .force('forceX', maine ? d3.forceX(scaleX(xcenter)) : d3.forceX(scaleLeftX(xcenter)))
 	  .force('forceY', d3.forceY(scaleY(ycenter)))
 	.force("charge", d3.forceManyBody().strength(1))
-	//.force('center', d3.forceCenter(scaleX(xcenter), scaleY(ycenter)).strength(1))
-	//.alphaDecay(0.032)
 	.alpha(0.6)
-	//.velocityDecay(0.5)
 	
 	currentForces.push(force)
 
@@ -288,6 +278,7 @@ function generateForce(data, xcenter, ycenter){
 
 }
 
+//actually run the election and get metadata before visualizing
 function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{index: 2},{index: 3}]){
 	//data comes in as each item having a votes element
 	//first add an array to each item for the value for each round
@@ -312,10 +303,8 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 	candidatesraw.forEach((d,i) => {
 		candidates.push(i + "");
 	})
-	//console.log(candidates)
 
 	let groups = candidates.map(x => data.filter( (item) => x == item.roundVal[0]))
-	//console.log(groups)
 
 	let sizes = groups.map(x => x.length)
 	let maxsize = Math.max(...sizes);
@@ -323,10 +312,7 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 
 	let tempgroup = groups[sizes.indexOf(maxsize)][0]
 	let fptpWinner = tempgroup.votes[tempgroup.currVoteInd]
-	//console.log(fptpWinner)
 
-	//console.log(maxsize)
-	//console.log(currMaj)
 	let eliminated = new Set([])
 	let eliminatedlist = []
 
@@ -351,7 +337,6 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 						datum.currVoteInd += 1
 					}
 				})
-				//console.log(group)
 			}
 				group.forEach( datum => {
 					if(datum.currVoteInd >= datum.votes.length){
@@ -372,22 +357,16 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 
 		//restablish groups
 		groups = candidates.map(x => data.filter( (item) => x == item.roundVal[item.roundVal.length - 1]))
-		//console.log(groups)
 
 		sizes = groups.map(x => x.length)
 		maxsize = Math.max(...sizes);
 		minsize = Math.min(...(sizes.filter(x => x != 0)));
 		currMaj = data.filter(x => x.votes[x.currVoteInd] != "X").length/2
-		//console.log(currMaj)
 
 		metadata.currMaj.push(currMaj)
-		//console.log(data)
-
-
-		//console.log(eliminated)
 	}
+
 	data.forEach( (d, i) => {
-		//let text = "Voter " + i + " ballot: " +  "\n";
 		let text = "Voter " + i + " ballot: \n";
 		d.votes.forEach((vote,i) => {
 			if(vote != "X"){
@@ -399,18 +378,11 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 				}
 			}
 		});
-		//if(d.votes[d.votes.length - 1] == 'X'){
-		//	text += d.votes.slice(0, d.votes.length - 1)
-		//}
-		//else{
-		//	text += d.votes
-		//}
 		d.text = text
 	})
 
 	tempgroup = groups[sizes.indexOf(maxsize)][0]
 	let rankedWinner = tempgroup.votes[tempgroup.currVoteInd]
-	//console.log(rankedWinner)
 
 	metadata.rounds = currRound + 1;
 	metadata.fptpWinner = fptpWinner
@@ -421,6 +393,7 @@ function initializeElectionData(data, candidatesraw=[{index: 0},{index: 1},{inde
 
 }
 
+//simulate round as visualization
 function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=false, fptp=false){
 	clearForces()
 	//base round - just initialize basic force to the center
@@ -428,11 +401,6 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 
 		clearGraph(savecircles=true)
 
-		//come from the center location
-		//data.forEach(item => {
-		//	item.x = scaleX(0.5);
-		//	item.y = scaleY(newy);
-		//});
 		
 		let force = generateForce(data, 0.5, newy)
 		force.stop()
@@ -445,18 +413,12 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 
 	for(let i=0; i<data.length; i++){
 		let dot = data[i];
-		//dot.newy = 0.8
-
-
 
 		let roundval = dot.roundVal[ranknum]
-		//console.log(roundval)
 		if(roundval == 'X'){
 			dot.newx = (tot_candidates)*1.0/(tot_candidates+1)
 		}
 		else{
-			//console.log(orderingmap)
-			//roundval = orderingmap[parseInt(roundval)]
 			dot.newx = (parseInt(roundval) + 1)*1.0/(tot_candidates+1)
 		}
 	}
@@ -467,18 +429,15 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 	let x_locs = Array.from({length: tot_candidates}, (_, i) => i + 1).map(x => x*1.0/(tot_candidates+1))
 
 	let all_subset_dots = x_locs.map(x => data.filter(dot => dot.newx == x));
-	//console.log(all_subset_dots)
 
 	let sizes = all_subset_dots.map(x => x.length)
 	let maxsize = Math.max(...sizes);
 	let minsize = Math.min(...sizes);
 
 	let winnerind = sizes.indexOf(maxsize)
-	//console.log(winnerind)
 
 	for(ind in all_subset_dots){
 		let subset_dots = all_subset_dots[ind]
-		//console.log(x_locs)
 		let x_loc = x_locs[orderingmap.indexOf(parseInt(ind))];
 		
 		//value is X so should be at the end
@@ -491,19 +450,12 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		force.on("tick", ticked)
 		.restart()
 	}
-	//force = generateForce(data, 0.5, newy)
-	//force.stop()
-	//force.on("tick", ticked)
-	//.restart()
-	//console.log(all_subset_dots)
-	//console.log(legend)
 
 	svg.selectAll(".cluster-label")
 		.data(all_subset_dots)
 		.join("text")
 		.attr("class", "cluster-label")
 		.text((d,i) => {
-			//console.log("hi")
 
 			//if we're at the end
 			if(i == all_subset_dots.length - 1){
@@ -569,25 +521,17 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		.transition()
 		.duration(500)
 		.style("opacity", (d,i) => {
-			//console.log(i)
-			//console.log(d)
-			//console.log()
-			//console.log(all_subset_dots)
 			if(show_winner && i == all_subset_dots.length - 1){
 				return 0.1
 			}
 			if(i == all_subset_dots.length - 1){
 				return 1;
 			}
-			console.log("---")
-			console.log(i)
-			console.log(all_subset_dots.length)
 			if(all_subset_dots[orderingmap[i]].length == 0){
 				return 0.1
 			}
 			//if(show_winner && all_subset_dots[orderingmap[i]].length != maxsize){
 			if(show_winner && all_subset_dots[orderingmap[i]][0].roundVal[ranknum] != winnerind){
-				//console.log("---" + i + "---")
 				return 0.1
 			}
 			return 1
@@ -596,10 +540,6 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 		.transition()
 		.duration(500)
 		.style("opacity", (d,i) => {
-			//console.log(i)
-			//console.log(d)
-			//console.log()
-			//console.log(all_subset_dots)
 			if(show_winner && i == all_subset_dots.length - 1){
 				return 0.1
 			}
@@ -609,8 +549,6 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			if(all_subset_dots[orderingmap[i]].length == 0){
 				return 0.1
 			}
-			//code below buggy?
-			//console.log(all_subset_dots)
 			//if(show_winner && all_subset_dots[orderingmap[i]].length != maxsize){
 			if(show_winner && all_subset_dots[orderingmap[i]][0].roundVal[ranknum] != winnerind){
 				//console.log("..." + i + "...")
@@ -619,7 +557,6 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			return 1
 		})
 
-	//console.log(winnerind)
 	svg.selectAll(".viz-circle")
 		.transition()
 		.duration(500)
@@ -671,7 +608,6 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 			.attr("text-decoration", "underline")
 			.style("width", maine ? scaleX(0.8) - scaleX(0.2) : scaleLeftX(0.8) - scaleLeftX(0.2))
 
-	//console.log(votetype)
 	if(fptp){
 		votetype
 			.text("First Past the Post")
@@ -689,7 +625,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 
 		//tells us if we're on our final round
 		let finalround = (ranknum+1 == data.meta.rounds);
-		//console.log(finalround)
+
 		if(ranknum > 0){
 			if(finalround){
 				if(data.meta.rankedWinner == data.meta.fptpWinner){
@@ -725,6 +661,7 @@ function runRound(data, roundnum, tot_candidates, newy, legend, show_winner=fals
 
 
 //https://stackoverflow.com/questions/25582882/javascript-math-random-normal-distribution-gaussian-bell-curve/39187274#39187274
+//approx. gaussian
 function gaussianRand() {
   var rand = 0;
 
@@ -735,17 +672,20 @@ function gaussianRand() {
   return rand / 6;
 }
 
-//not sure if this is right, double check
+//sample from one of two gaussians to simulate two peaks
 function bimodGaussianRand() {
 	if(Math.random() < 0.5){
+		//gaussian from 0 to 0.6
 		return gaussianRand()*0.6
 	}
 	else{
+		//gaussian from 0.4 to 1.0
 		return 0.4+gaussianRand()*0.6
 	}
 }
 
 
+//helper method for finding who a voter would vote for
 //https://stackoverflow.com/questions/3730510/javascript-sort-array-and-return-an-array-of-indicies-that-indicates-the-positi
 function getRankedIndices(arr) {
 
@@ -758,6 +698,7 @@ function getRankedIndices(arr) {
 	return indices
 }
 
+//shuffle array starting at start location
 function shuffleArray(array, start) {
     for (let i = array.length - 1; i > start; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -820,13 +761,13 @@ function simulate(candidates, size, rng=0.05, novote = 0.01){
 		ballots.push(dot)
 	}
 
-	//console.log(ballots)
 	renderGraph(ballots)
 	runRound(ballots, 0, 5, 0.2, legend)
 	return ballots
 
 }
 
+//starting data for candidates on simulation
 var candidates = [
 	{index: 0.3, id: 0},
 	{index: 0.4, id: 1},
@@ -837,6 +778,7 @@ var candidates = [
 
 let simulationBallots;
 
+//update the simulation
 function updateSimulationInit() {
 
 	simulationBallots = simulate(candidates, 200)
@@ -848,28 +790,14 @@ function updateSimulationInit() {
 }
 
 
-
-//let ballots = simulate(candidates, 20)
-//renderGraph(ballots)
-//runRound(ballots, 0, 5, 0.2, legend)
-
-
-//let candidates = []
-
 //base code for selecting candidates on political spectrum
 //https://observablehq.com/@d3/circle-dragging-i
 
 function drawCandidates(w, xmid, ymid){
-
-
-
 	let scaledw = w*rightwidth
 
 	let xstart = scaleRightX(xmid) - scaledw/2
 	let xend = scaleRightX(xmid) + scaledw/2
-
-	//console.log(xstart)
-	//console.log(xend)
 
 	candidates.forEach((d) => {
 		d.x = d.index*scaledw+xstart
@@ -898,9 +826,6 @@ function drawCandidates(w, xmid, ymid){
 			//console.log(event.x)
 			d3.select(this)
 				.attr("cx", d.x = dragXScale(event.x))
-			//console.log(d.x)
-			//console.log(d.index)
-			//console.log()
 			d.index = (d.x-xstart)/scaledw
 		}
 
@@ -931,7 +856,6 @@ function drawCandidates(w, xmid, ymid){
 			.attr("fill","grey")
 			.attr("opacity","0.1")
 			.on("click", (event,d) => {
-				//console.log(event)
 				if(candidates.length < 8){
 					console.log(candidates)
 					let ind = (event.x-xstart)/scaledw
@@ -954,7 +878,7 @@ function drawCandidates(w, xmid, ymid){
 			.style("cursor", "copy")
 	}
 
-	//console.log(candidates)
+	//draw each candidate on the bar below distribution
 	function drawCandSliders(){
 		svg.selectAll(".candidates")
 			.data(candidates)
@@ -967,7 +891,6 @@ function drawCandidates(w, xmid, ymid){
 			.call(drag())
 			.on("contextmenu", (event, d) => {
 				if(candidates.length < 2){
-					//console.log("yo")
 					return;
 				}
 				event.preventDefault();
@@ -991,8 +914,6 @@ function drawCandidates(w, xmid, ymid){
 				clearDescriptionText()
 
 				setOrderingMap()
-
-				//console.log(candidates)
 			})
 			.attr("fill", (d,i) => scaleColor[i])
 			.attr("stroke", "black")
@@ -1063,10 +984,8 @@ function getGaussianLine(w, h, xcenter, ycenter){
 	yseries[1002] = 0.1
 
 
-	//console.log(yseries)
 	let combinedSeries = d3.zip(xseries, yseries);
 
-	//console.log(combinedSeries)
 	let line = d3.line()
 		.x(d => (d[0])*w+(xcenter))
 		.y(d => (1-d[1])*(h)+(ycenter))
@@ -1095,7 +1014,6 @@ function getUniformLine(w, h, xcenter, ycenter){
 
 	let combinedSeries = d3.zip(xseries, yseries);
 
-	//console.log(combinedSeries)
 	let line = d3.line()
 		.x(d => d[0]*w+(xcenter))
 		.y(d => (1-d[1])*(h)+(ycenter))
@@ -1120,7 +1038,6 @@ function getLeftSkewLine(w, h, xcenter, ycenter){
 
 
 	let yseries = xseries.map(d => stdlib.base.dists.beta.pdf(d+0.5, 4, 2));
-	//console.log(yseries)
 	let max = Math.max(...yseries)
 	yseries = yseries.map(d => d/max + 0.1)
 
@@ -1150,7 +1067,6 @@ function getRightSkewLine(w, h, xcenter, ycenter){
 
 
 	let yseries = xseries.map(d => stdlib.base.dists.beta.pdf(d+0.5, 2, 4));
-	//console.log(yseries)
 	let max = Math.max(...yseries)
 	yseries = yseries.map(d => d/max + 0.1)
 
@@ -1197,10 +1113,8 @@ function getBimodalGaussianLine(w, h, xcenter, ycenter){
 
 	yseries[0] = 0.1
 	yseries[1002] = 0.1
-	//console.log(yseries)
 	let combinedSeries = d3.zip(xseries, yseries);
 
-	//console.log(combinedSeries)
 	let line = d3.line()
 		.x(d => d[0]*w+(xcenter))
 		.y(d => (1-d[1])*(h)+(ycenter))
@@ -1232,7 +1146,6 @@ function drawSimulationInit(){
 		? svg.select("#simheader") 
 		: svg.append("text")
 
-	//console.log(simheader)
 	simheader
 		.attr("x", scaleRightX(0.5))
 		.attr("y", scaleY(0.2/2))
@@ -1264,16 +1177,20 @@ function drawSimulationInit(){
 		.style("opacity", 1)
 
 }
+
+
+
 function drawSimulation(){
 
 	let simwidth = 0.75
 	let simheight= 0.35
 	let simystart = 0.2
 
-
 	let simline, series;
 
 
+	//note this calculation isn't really efficient - it's computing the lines each time, but 
+	//it runs fast enough where this isn't an issue
 	if(simdistrib == "gauss"){
 		[simline, series] = getGaussianLine(simwidth, simheight, 0.5, simystart)
 	}
@@ -1322,17 +1239,6 @@ let example2Button = document.getElementById("example2button")
 let example3Button = document.getElementById("example3button")
 
 let simChoiceSelect = document.getElementById("simchoice")
-
-//let parties = [
-//	"Industrial Party",
-//	"Peace Party",
-//	"Civic Party",
-//	"Agrarian Party",
-//	"Freedom Party",
-//	"Tech Party",
-//	"Patriot Party",
-//	"Justice Party",
-//	"Science Party",
 
 let parties = [
 	"Spider-Man",
@@ -1545,8 +1451,6 @@ var backward = false;
 
 let update = ()=> {
 
-	//step += 1
-
 	description.innerHTML = descriptions[step]
 
 	let meta;
@@ -1599,9 +1503,8 @@ let update = ()=> {
 			}
 			renderGraph(dots)
 			meta = initializeElectionData(dots)
-			//console.log(meta)
 
-			//kinda weird doing this, but it works?
+			//set metadata
 			dots.meta = meta;
 			runRound(dots, 0, 5, 0.4, legend, fptp=true)
 			break;
@@ -1613,7 +1516,6 @@ let update = ()=> {
 			break;
 		case 3:
 			runRound(dots, 1, 5, 0.7, legend, true, fptp=true)
-			//runRound1();
 			break;
 		case 4:
 			if(backward){
@@ -1675,9 +1577,7 @@ let update = ()=> {
 				renderGraph(dots)
 				meta = initializeElectionData(dots)
 				colorizeDots(dots)
-				//console.log(meta)
 
-				//kinda weird doing this, but it works?
 				dots.meta = meta;
 				runRound(dots, 3, 5, 0.7, legend, true)
 				break;
@@ -1745,6 +1645,7 @@ function jumpAhead() {
 
 }
 
+//fade in to start
 d3.select("body")
 	.style("opacity", 0)
 	.transition()
@@ -1752,8 +1653,6 @@ d3.select("body")
 	.style("opacity", 1)
 
 
+//initialize the update function
 update()
 
-
-//for testing
-//step = 8
