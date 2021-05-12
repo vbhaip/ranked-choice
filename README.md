@@ -5,6 +5,8 @@
 
 This repository contains the code for https://vinaybhaip.com/ranked-choice. This data visualization provides a visual walk-through of the Maine 2018 2nd Congressional District Election to explain Ranked Choice Voting and then provides an election simulation system to explore the differences between the current system and Ranked Choice Voting.
 
+A static visualization can be found here: https://vinaybhaip.com/ranked-choice/ranked-choice.pdf.
+
 
 ### How It Works
 
